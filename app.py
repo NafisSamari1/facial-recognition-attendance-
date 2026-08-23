@@ -1,0 +1,531 @@
+"""
+app.py
+------
+Flask backend for the Face Recognition Attendance Management System.
+
+Routes:
+    /                   dashboard (analytics overview)
+    /register           student registration + face capture
+    /attendance         live recognition / attendance-taking screen
+    /reports            searchable, exportable attendance records
+    /students           manage registered students
+
+API (JSON, called from the browser via fetch()):
+    POST /api/students                 create a student
+    POST /api/capture-sample           save one face sample frame
+    POST /api/train                    (re)train the LBPH model
+    POST /api/recognize                run recognition on one frame
+    POST /api/mark-attendance          confirm + log an attendance event
+    GET  /api/stats                    summary numbers for the dashboard
+    GET  /api/trend                    7-day attendance trend
+    GET  /api/course-breakdown         attendance count per course
+    GET  /api/attendance.csv           export attendance as CSV
+"""
+
+import csv
+import io
+import os
+
+from flask import Flask, Response, jsonify, render_template, request, redirect, url_for, flash, session
+
+import database as db
+import face_utils
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key')
+db.init_db()
+
+
+def require_login():
+    if request.endpoint in {"login_page", "static"}:
+        return None
+    if not session.get("logged_in"):
+        return redirect(url_for("login_page"))
+    return None
+
+
+def is_manager():
+    return session.get("logged_in") and session.get("role") == "manager"
+
+
+def require_manager():
+    if not session.get("logged_in"):
+        return redirect(url_for("login_page"))
+    if not is_manager():
+        flash("Access restricted to Managers.")
+        return redirect(url_for("dashboard"))
+    return None
+
+
+# --------------------------------------------------------------- pages -----
+
+@app.route("/")
+def dashboard():
+    if not session.get("logged_in"):
+        return redirect(url_for("login_page"))
+    
+    if session.get("role") == "student":
+        student_id = session.get("student_id")
+        summary = db.get_student_summary(student_id) if student_id else None
+        return render_template("dashboard.html", student_summary=summary)
+        
+    return render_template("dashboard.html")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login_page():
+    if session.get("logged_in"):
+        return redirect(url_for("dashboard"))
+
+    if request.method == "POST":
+        login_type = request.form.get("login_type", "manager")
+
+        if login_type == "student":
+            student_id = (request.form.get("student_id") or "").strip()
+            device_id = (request.form.get("device_id") or "").strip()
+            device_name = (request.form.get("device_name") or "").strip()
+
+            if not student_id:
+                flash("Please enter your Student ID.")
+                return render_template("login.html")
+            
+            student = db.get_student(student_id)
+            if not student:
+                flash(f"Student ID '{student_id}' not found. Please verify or ask a Manager to register your account.")
+                return render_template("login.html")
+
+            # Strict 1:1 Device Binding Checks
+            if device_id:
+                # Check 1: Is this student's account bound to a different device?
+                if student.get("device_id") and student["device_id"] != device_id:
+                    bound_name = student.get("device_name") or "another device"
+                    flash(f"❌ Device Binding Mismatch: Account '{student_id}' is registered to a different phone ({bound_name}). You cannot log in from this device. If you lost or changed your phone, submit a device reset request to your manager.")
+                    return render_template("login.html")
+
+                # Check 2: Is this device already assigned to another student?
+                assigned_other = db.get_student_by_device(device_id)
+                if assigned_other and assigned_other["student_id"] != student_id:
+                    flash(f"❌ Device Sharing Restriction: This device is already registered to another student ({assigned_other['full_name']}). Multiple students cannot share the same device.")
+                    return render_template("login.html")
+
+                # If student is unbound, bind this device to their account automatically
+                if not student.get("device_id"):
+                    db.assign_device(student_id, device_id, device_name)
+
+            session["logged_in"] = True
+            session["role"] = "student"
+            session["username"] = student["full_name"]
+            session["student_id"] = student["student_id"]
+            session["full_name"] = student["full_name"]
+            session["course"] = student["course"]
+            flash(f"Welcome back, {student['full_name']}.")
+            return redirect(url_for("dashboard"))
+
+
+        else:
+            username = (request.form.get("username") or "").strip()
+            password = request.form.get("password") or ""
+
+            expected_user = os.environ.get("APP_USERNAME", "admin")
+            expected_pass = os.environ.get("APP_PASSWORD", "admin123")
+
+            if not username or not password:
+                flash("Username and password are required.")
+                return render_template("login.html")
+
+            if username == expected_user and password == expected_pass:
+                session["logged_in"] = True
+                session["role"] = "manager"
+                session["username"] = username
+                flash("Welcome back to Verascan Manager Portal.")
+                return redirect(url_for("dashboard"))
+
+            flash("Invalid manager username or password.")
+
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login_page"))
+
+
+@app.route("/register")
+def register_page():
+    guard = require_manager()
+    if guard:
+        return guard
+    return render_template("register.html")
+
+
+@app.route("/attendance")
+def attendance_page():
+    if not session.get("logged_in"):
+        return redirect(url_for("login_page"))
+    return render_template("attendance.html")
+
+
+@app.route("/zone-setup")
+def zone_page():
+    guard = require_manager()
+    if guard:
+        return guard
+    return render_template("zone.html")
+
+
+@app.route("/reports")
+def reports_page():
+    if not session.get("logged_in"):
+        return redirect(url_for("login_page"))
+    return render_template("reports.html")
+
+
+@app.route("/students")
+def students_page():
+    guard = require_manager()
+    if guard:
+        return guard
+    return render_template("students.html", students=db.list_students())
+
+
+
+@app.route("/api/geocode")
+def api_geocode():
+    query = (request.args.get("q") or "").strip()
+    if not query:
+        return jsonify({"ok": False, "results": []})
+    try:
+        import urllib.request
+        import urllib.parse
+        import json
+        url = f"https://nominatim.openstreetmap.org/search?format=json&q={urllib.parse.quote(query)}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'VerascanAttendanceSystem/1.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode())
+            results = [{
+                "display_name": item.get("display_name"),
+                "lat": float(item.get("lat")),
+                "lng": float(item.get("lon"))
+            } for item in data[:5]]
+            return jsonify({"ok": True, "results": results})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), "results": []})
+
+
+
+# --------------------------------------------------------------- API -------
+
+@app.route("/api/students", methods=["POST"])
+def api_create_student():
+    if not is_manager():
+        return jsonify({"ok": False, "error": "Manager access required to create student accounts"}), 403
+
+    payload = request.get_json(force=True)
+    student_id = (payload.get("student_id") or "").strip()
+    full_name = (payload.get("full_name") or "").strip()
+    course = (payload.get("course") or "").strip()
+    email = (payload.get("email") or "").strip()
+    device_id = (payload.get("device_id") or "").strip() or None
+
+    if not student_id or not full_name or not course:
+        return jsonify({"ok": False, "error": "Student ID, Full Name, and Course are required"}), 400
+
+    if not device_id:
+        device_id = f"dev-{student_id.lower()}"
+
+    if db.get_student(student_id):
+        return jsonify({"ok": False, "error": "A student with that ID already exists"}), 409
+
+    if db.get_student_by_device(device_id):
+        # If auto-generated device_id conflicts, append timestamp suffix
+        device_id = f"{device_id}-{os.urandom(2).hex()}"
+
+    db.add_student(student_id, full_name, course, email, device_id=device_id)
+    return jsonify({"ok": True, "device_id": device_id})
+
+
+@app.route("/api/capture-sample", methods=["POST"])
+def api_capture_sample():
+    payload = request.get_json(force=True)
+    student_id = payload.get("student_id")
+
+    # Allow if manager OR if logged-in student capturing for their own account
+    is_self = (session.get("role") == "student" and session.get("student_id") == student_id)
+    if not (is_manager() or is_self):
+        return jsonify({"ok": False, "error": "Unauthorized to capture face samples for this student ID"}), 403
+
+    frame = payload.get("frame")
+    sample_index = int(payload.get("sample_index", 0))
+
+    if not db.get_student(student_id):
+        return jsonify({"ok": False, "error": "Unknown student_id"}), 404
+
+    saved = face_utils.save_face_sample(student_id, frame, sample_index)
+    if not saved:
+        return jsonify({"ok": False, "error": "No face detected in frame - hold steady and face the camera"}), 422
+
+    total = face_utils.count_samples(student_id)
+    db.set_face_sample_count(student_id, total)
+    return jsonify({"ok": True, "total_samples": total})
+
+
+@app.route("/api/train", methods=["POST"])
+def api_train():
+    if not (is_manager() or session.get("role") == "student"):
+        return jsonify({"ok": False, "error": "Unauthorized to train recognition model"}), 403
+    result = face_utils.train_model()
+    return jsonify(result)
+
+
+
+@app.route("/api/recognize", methods=["POST"])
+def api_recognize():
+    payload = request.get_json(force=True)
+    frame = payload.get("frame")
+    result = face_utils.recognize(frame)
+
+    if result.get("face_found"):
+        db.log_event(
+            matched=result.get("matched", False),
+            student_id=result.get("student_id"),
+            full_name=db.get_student(result["student_id"])["full_name"] if result.get("student_id") else None,
+            confidence=result.get("confidence"),
+            reason=result.get("reason", "unknown"),
+        )
+        if result.get("matched") and result.get("student_id"):
+            student = db.get_student(result["student_id"])
+            if student:
+                result["full_name"] = student["full_name"]
+                result["course"] = student["course"]
+                result["already_marked"] = db.has_attended_today(student["student_id"], student["course"])
+
+    return jsonify(result)
+
+
+@app.route("/api/mark-attendance", methods=["POST"])
+def api_mark_attendance():
+    payload = request.get_json(force=True)
+    student_id = payload.get("student_id")
+    confidence = float(payload.get("confidence", 0))
+
+    student = db.get_student(student_id)
+    if not student:
+        return jsonify({"ok": False, "error": "Unknown student"}), 404
+
+    device_id = (payload.get("device_id") or "").strip()
+    device_name = (payload.get("device_name") or "").strip()
+    location_lat = payload.get("location_lat")
+    location_lng = payload.get("location_lng")
+
+    if location_lat is None or location_lng is None:
+        return jsonify({"ok": False, "error": "Location is required to mark attendance."}), 400
+
+    if not device_id:
+        return jsonify({"ok": False, "error": "Device identification required to mark attendance."}), 400
+
+    # Strict 1:1 Device Checks
+    assigned_student = db.get_student_by_device(device_id)
+    if assigned_student and assigned_student["student_id"] != student_id:
+        return jsonify({
+            "ok": False,
+            "error": f"❌ Device Sharing Restriction: This device is registered to {assigned_student['full_name']}. You cannot take attendance for another student on this device."
+        }), 403
+
+    if student.get("device_id") and student["device_id"] != device_id:
+        bound_name = student.get("device_name") or "another phone"
+        return jsonify({
+            "ok": False,
+            "error": f"❌ Device Mismatch: Your account is registered to a different device ({bound_name}). Request a device reset if you changed your phone."
+        }), 403
+
+    active_session = db.get_active_session(course=student["course"])
+    if not active_session:
+        return jsonify({
+            "ok": False,
+            "error": f"Attendance window for {student['course']} is closed. No active attendance signal broadcasted by manager."
+        }), 403
+
+    zone_check = face_utils.check_allowed_area(location_lat, location_lng)
+    if not zone_check.get("allowed"):
+        return jsonify({
+            "ok": False,
+            "error": zone_check.get("message", "Student must be in the allowed attendance area to sign in.")
+        }), 403
+
+    if not student.get("device_id"):
+        db.assign_device(student_id, device_id, device_name)
+
+    status = "present" if confidence >= face_utils.CONFIDENCE_ACCEPT_THRESHOLD else "flagged"
+    db.log_attendance(
+        student_id,
+        student["full_name"],
+        student["course"],
+        confidence,
+        status=status,
+        device_id=device_id,
+        location_lat=location_lat,
+        location_lng=location_lng,
+    )
+    return jsonify({"ok": True, "duplicate": False, "status": status,
+                     "message": f"Attendance recorded for {student['full_name']}."})
+
+
+@app.route("/api/student/request-device-reset", methods=["POST"])
+def api_request_device_reset():
+    if session.get("role") != "student":
+        return jsonify({"ok": False, "error": "Student access required"}), 403
+    payload = request.get_json(force=True) or {}
+    reason = (payload.get("reason") or "Lost or changed device").strip()
+    student_id = session.get("student_id")
+    db.request_device_reset(student_id, reason)
+    return jsonify({"ok": True, "message": "Device reset request submitted to your manager."})
+
+
+@app.route("/api/manager/unbind-device", methods=["POST"])
+def api_manager_unbind_device():
+    if not is_manager():
+        return jsonify({"ok": False, "error": "Manager access required"}), 403
+    payload = request.get_json(force=True) or {}
+    student_id = (payload.get("student_id") or "").strip()
+    if not student_id:
+        return jsonify({"ok": False, "error": "Student ID required"}), 400
+    db.unbind_student_device(student_id)
+    return jsonify({"ok": True, "message": f"Device binding successfully reset for student {student_id}."})
+
+
+
+@app.route("/api/zone", methods=["GET", "POST"])
+def api_zone():
+    if request.method == "POST":
+        if not is_manager():
+            return jsonify({"ok": False, "error": "Manager access required to create or configure area zone"}), 403
+        payload = request.get_json(force=True)
+        lat = payload.get("lat")
+        lng = payload.get("lng")
+        radius = payload.get("radius_meters", 100.0)
+        name = (payload.get("name") or "Lecture Hall Zone").strip()
+        if lat is None or lng is None:
+            return jsonify({"ok": False, "error": "Latitude and longitude are required."}), 400
+        zone = db.set_active_zone(lat, lng, radius, name)
+        return jsonify({"ok": True, "zone": zone})
+    
+    zone = db.get_active_zone()
+    return jsonify({"ok": True, "zone": zone})
+
+
+@app.route("/api/zone/check", methods=["POST"])
+def api_zone_check():
+    payload = request.get_json(force=True)
+    lat = payload.get("lat")
+    lng = payload.get("lng")
+    if lat is None or lng is None:
+        return jsonify({"ok": False, "error": "Latitude and longitude required"}), 400
+    res = face_utils.check_allowed_area(lat, lng)
+    return jsonify(res)
+
+
+@app.route("/api/sessions/active", methods=["GET"])
+def api_active_session():
+    course = request.args.get("course") or None
+    if session.get("role") == "student" and not course:
+        course = session.get("course")
+    session_data = db.get_active_session(course)
+    zone_data = db.get_active_zone()
+    return jsonify({"ok": True, "session": session_data, "zone": zone_data})
+
+
+@app.route("/api/sessions/start", methods=["POST"])
+def api_start_session():
+    if not is_manager():
+        return jsonify({"ok": False, "error": "Manager access required to broadcast attendance prompt signal"}), 403
+
+    payload = request.get_json(force=True)
+    course = (payload.get("course") or "ALL").strip()
+    duration = int(payload.get("duration_minutes", 15))
+    title = (payload.get("title") or f"{course} Attendance Window").strip()
+    
+    sess = db.create_session(course, duration, title)
+    return jsonify({"ok": True, "session": sess})
+
+
+@app.route("/api/sessions/end", methods=["POST"])
+def api_end_session():
+    if not is_manager():
+        return jsonify({"ok": False, "error": "Manager access required to stop attendance session signal"}), 403
+
+    payload = request.get_json(force=True)
+    session_id = payload.get("session_id")
+    if not session_id:
+        return jsonify({"ok": False, "error": "Session ID required"}), 400
+    db.end_session(session_id)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/students/<student_id>", methods=["DELETE"])
+def api_delete_student(student_id):
+    if not is_manager():
+        return jsonify({"ok": False, "error": "Manager access required to remove student records"}), 403
+
+    db.delete_student(student_id)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/stats")
+def api_stats():
+    return jsonify(db.get_summary_stats())
+
+
+@app.route("/api/trend")
+def api_trend():
+    return jsonify(db.get_last_7_days_trend())
+
+
+@app.route("/api/course-breakdown")
+def api_course_breakdown():
+    return jsonify(db.get_course_breakdown())
+
+
+@app.route("/api/attendance")
+def api_attendance_list():
+    day = request.args.get("date") or None
+    course = request.args.get("course") or None
+    student_id = request.args.get("student_id") or None
+    
+    # If user is a student, lock search to their own student_id
+    if session.get("role") == "student":
+        student_id = session.get("student_id")
+
+    return jsonify(db.list_attendance(day=day, course=course, student_id=student_id))
+
+
+@app.route("/api/attendance.csv")
+def api_attendance_csv():
+    student_id = request.args.get("student_id") or None
+    
+    # If user is a student, lock export to their own student_id
+    if session.get("role") == "student":
+        student_id = session.get("student_id")
+
+    rows = db.list_attendance(
+        day=request.args.get("date") or None,
+        course=request.args.get("course") or None,
+        student_id=student_id,
+        limit=100000,
+    )
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["Student ID", "Name", "Course", "Date", "Time", "Confidence (%)", "Status", "Device"])
+    for r in rows:
+        writer.writerow([r["student_id"], r["full_name"], r["course"], r["date"],
+                          r["time"], r["confidence"], r["status"], r["device_id"]])
+    return Response(
+        buf.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=attendance_export.csv"},
+    )
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
+

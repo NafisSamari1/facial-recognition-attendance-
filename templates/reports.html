@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="eyebrow">{% if session.get('role') == 'student' %}Personal Log{% else %}Audit trail{% endif %}</div>
+  <h1 class="page-title">{% if session.get('role') == 'student' %}My Attendance History{% else %}Attendance reports{% endif %}</h1>
+  <p class="page-sub">
+    {% if session.get('role') == 'student' %}
+      View all your recorded attendance events, confidence levels, and check-in times.
+    {% else %}
+      Every logged attendance event, with confidence score and status, filterable and exportable for institutional records.
+    {% endif %}
+  </p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3 class="section-title">{% if session.get('role') == 'student' %}My Attendance Records{% else %}Attendance reports{% endif %}</h3>
+      <p class="section-hint">{% if session.get('role') == 'student' %}Your personal attendance log{% else %}Filterable and exportable logs{% endif %}</p>
+    </div>
+    <a class="btn btn-primary btn-sm" id="export-link" href="/api/attendance.csv">Export CSV</a>
+  </div>
+  <div class="filters">
+    <input type="date" id="f-date">
+    {% if session.get('role') != 'student' %}
+      <input type="text" id="f-course" placeholder="Filter by course">
+      <input type="text" id="f-student" placeholder="Filter by student ID">
+    {% endif %}
+    <button class="btn btn-ghost btn-sm" id="apply-filters">Apply</button>
+    <button class="btn btn-ghost btn-sm" id="clear-filters">Clear</button>
+  </div>
+
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr><th>Student</th><th>Course</th><th>Date</th><th>Time</th><th>Confidence</th><th>Status</th><th>Device</th></tr>
+      </thead>
+      <tbody id="rows">
+        <tr><td colspan="7" class="empty-state">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function buildQuery() {
+  const params = new URLSearchParams();
+  const dateEl = document.getElementById('f-date');
+  const courseEl = document.getElementById('f-course');
+  const studentEl = document.getElementById('f-student');
+  
+  if (dateEl && dateEl.value) params.set('date', dateEl.value);
+  if (courseEl && courseEl.value.trim()) params.set('course', courseEl.value.trim());
+  if (studentEl && studentEl.value.trim()) params.set('student_id', studentEl.value.trim());
+  return params.toString();
+}
+
+async function loadRows() {
+  const qs = buildQuery();
+  document.getElementById('export-link').href = '/api/attendance.csv' + (qs ? `?${qs}` : '');
+  try {
+    const rows = await api('/api/attendance' + (qs ? `?${qs}` : ''));
+    const body = document.getElementById('rows');
+    if (!rows.length) {
+      body.innerHTML = `<tr><td colspan="7" class="empty-state">No matching attendance records.</td></tr>`;
+      return;
+    }
+    body.innerHTML = rows.map(r => `
+      <tr>
+        <td>${r.full_name}<div class="mono">${r.student_id}</div></td>
+        <td>${r.course}</td>
+        <td class="mono">${r.date}</td>
+        <td class="mono">${r.time}</td>
+        <td class="mono">${r.confidence}%</td>
+        <td><span class="badge ${r.status === 'present' ? 'badge-ok' : 'badge-warn'}">${r.status}</span></td>
+        <td class="mono">${r.device_id}</td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+document.getElementById('apply-filters').addEventListener('click', loadRows);
+document.getElementById('clear-filters').addEventListener('click', () => {
+  const dateEl = document.getElementById('f-date');
+  const courseEl = document.getElementById('f-course');
+  const studentEl = document.getElementById('f-student');
+  if (dateEl) dateEl.value = '';
+  if (courseEl) courseEl.value = '';
+  if (studentEl) studentEl.value = '';
+  loadRows();
+});
+
+loadRows();
+
+</script>
+{% endblock %}

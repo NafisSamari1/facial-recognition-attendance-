@@ -1,0 +1,285 @@
+:root {
+  --forest: #14311F;
+  --pine: #2C6E49;
+  --sage: #74A57F;
+  --mint: #C3E8CF;
+  --cream: #FBFBF7;
+  --white: #FFFFFF;
+  --ink: #12261A;
+  --ink-soft: #5A6D61;
+  --error: #B3451E;
+  --error-bg: #FBEDE6;
+
+  --display: "Fraunces", serif;
+  --body: "Sora", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: var(--body);
+  color: var(--ink);
+  background: var(--cream);
+}
+
+.screen {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+/* ---------- Brand panel ---------- */
+.brand {
+  position: relative;
+  background: var(--forest);
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  padding: 4rem;
+}
+
+.brand-copy {
+  position: relative;
+  z-index: 1;
+  color: var(--white);
+}
+
+.brand-logo {
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  margin-bottom: 1.1rem;
+  background: var(--white);
+  border-radius: 50%;
+  padding: 6px;
+}
+
+.brand-eyebrow {
+  display: block;
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sage);
+  margin-bottom: 0.6rem;
+}
+
+.brand-title {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 2.3rem;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.15;
+  max-width: 12ch;
+}
+
+.brand-sub {
+  font-size: 1rem;
+  color: var(--mint);
+  max-width: 26ch;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ---------- Form panel ---------- */
+.panel {
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.form-wrap {
+  width: 100%;
+  max-width: 360px;
+}
+
+.form-wrap h2 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 2rem;
+  margin: 0 0 0.35rem 0;
+  color: var(--forest);
+}
+
+.form-sub {
+  margin: 0 0 1.75rem 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--forest);
+  margin-bottom: 0.4rem;
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 1.15rem;
+  border: 1.5px solid #DCE6DF;
+  border-radius: 8px;
+  font-family: var(--body);
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: var(--cream);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  outline: none;
+  border-color: var(--pine);
+  box-shadow: 0 0 0 3px rgba(44, 110, 73, 0.15);
+}
+
+/* Password input with eye toggle inside the bar */
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-wrapper input[type="text"],
+.password-wrapper input[type="password"] {
+    margin-bottom: 1.15rem;
+    padding-right: 45px; /* Make room for the eye icon */
+}
+
+.toggle-password {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    transition: color 0.2s ease;
+    z-index: 2;
+    line-height: 1;
+}
+
+.toggle-password:hover {
+    color: var(--forest);
+}
+
+.toggle-password:focus-visible {
+    outline: 2px solid var(--pine);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.toggle-password svg {
+    display: block;
+    pointer-events: none;
+}
+
+/* When password input is focused, eye icon color changes */
+.password-wrapper input[type="text"]:focus ~ .toggle-password,
+.password-wrapper input[type="password"]:focus ~ .toggle-password {
+    color: var(--pine);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+}
+
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0;
+  font-weight: 400;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.remember input {
+  accent-color: var(--pine);
+}
+
+.link {
+  color: var(--pine);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link:hover { text-decoration: underline; }
+
+button[type="submit"] {
+  width: 100%;
+  padding: 0.85rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--forest);
+  color: var(--white);
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 0.98rem;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+button[type="submit"]:hover { background: var(--pine); }
+button[type="submit"]:active { transform: translateY(1px); }
+button[type="submit"]:focus-visible {
+  outline: 3px solid var(--sage);
+  outline-offset: 2px;
+}
+
+.alert {
+  background: var(--error-bg);
+  color: var(--error);
+  border: 1px solid #EBC7B4;
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 860px) {
+  .screen {
+    grid-template-columns: 1fr;
+  }
+  .brand {
+    min-height: 240px;
+    padding: 2.5rem;
+  }
+  .brand-title { font-size: 2.4rem; }
+  .panel { padding: 2.5rem 1.75rem; }
+}
+/* KNUST Text Logo */
+.brand-logo-text {
+  width: 68px;
+  height: 68px;
+  margin-bottom: 1.1rem;
+  background: var(--white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--forest);
+  padding: 6px;
+  text-align: center;
+  line-height: 1.2;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}

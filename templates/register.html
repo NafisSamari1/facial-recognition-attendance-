@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Register Student — Verascan{% endblock %}
+
+{% block content %}
+<!-- Manager Student Setup Hero Banner -->
+<div class="login-hero card mt-0">
+  <div class="login-pill">Student Enrollment • Account Setup</div>
+  <div class="login-brandrow">
+    <img class="brand-logo login-logo" src="{{ url_for('static', filename='images/knust-logo-png_seeklogo-618224.png') }}" alt="Verascan logo">
+    <div>
+      <div class="eyebrow">Manager Portal</div>
+      <h1 class="page-title login-title">Register a new student</h1>
+    </div>
+  </div>
+  <div class="login-hero-grid">
+    <p class="page-sub">Fill in the student details below to create their official account record. The student will be prompted to complete their facial recognition profile upon logging into their Student Portal.</p>
+    <div class="login-highlight">
+      <div class="login-highlight__item">
+        <strong>Manager Setup</strong>
+        <span>Student info only</span>
+      </div>
+      <div class="login-highlight__item">
+        <strong>Self-Service</strong>
+        <span>Student face scan</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2 mt-24">
+  <!-- Student Details Form Card -->
+  <div class="card login-card-style">
+    <div class="card-header">
+      <div>
+        <h3 class="section-title">Student information</h3>
+        <p class="section-hint">Enter student details to initialize their account.</p>
+      </div>
+      <span class="hint-pill">Manager Step</span>
+    </div>
+
+    <form id="register-form" class="login-form">
+      <div class="field mb-12">
+        <label for="student_id"><span class="field-icon">👤</span> Student ID</label>
+        <input id="student_id" placeholder="e.g. STU002 or 20741984" required>
+      </div>
+
+      <div class="field mb-12">
+        <label for="full_name"><span class="field-icon">📛</span> Full Name</label>
+        <input id="full_name" placeholder="e.g. Ama Serwaa" required>
+      </div>
+
+      <div class="field mb-12">
+        <label for="course"><span class="field-icon">📚</span> Course / Department</label>
+        <input id="course" placeholder="e.g. BSc Computer Science" required>
+      </div>
+
+      <div class="field mb-12">
+        <label for="email"><span class="field-icon">✉️</span> Email Address</label>
+        <input id="email" type="email" placeholder="e.g. student@knust.edu.gh">
+      </div>
+
+      <div class="field mb-12">
+        <div class="flex-between">
+          <label for="device_id"><span class="field-icon">📱</span> Assigned Device ID</label>
+          <button type="button" class="text-link-btn" id="auto-device-btn">⚡ Auto-generate</button>
+        </div>
+        <input id="device_id" placeholder="Optional (e.g. DEV-83920)">
+      </div>
+
+      <div class="form-actions mt-24">
+        <button class="btn btn-primary btn-lg btn-block" type="submit">➕ Register Student Account</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Onboarding Information Card for Manager -->
+  <div class="card login-card-style">
+    <div class="card-header">
+      <div>
+        <h3 class="section-title">💡 Registration & Face Onboarding</h3>
+        <p class="section-hint">How biometric enrollment works for students.</p>
+      </div>
+      <span class="status-chip"><span class="dot dot-live"></span>Self-Service Flow</span>
+    </div>
+
+    <div class="hint-pill mb-16" style="background: rgba(47,140,94,0.12); border: 1px solid var(--accent); color: var(--accent); padding: 14px 18px; border-radius: 12px; line-height: 1.5;">
+      <strong>ℹ️ Student Biometric Onboarding Note:</strong>
+      <p style="margin-top:6px; font-size:0.9rem; color:var(--text);">
+        You do not need to take photos of the student now. Once registered, the student will log in to their <strong>Student Portal</strong> using their <strong>Student ID</strong>. Upon login, an interactive prompt will automatically guide them to scan their 5 face samples using their device camera.
+      </p>
+    </div>
+
+    <div class="card p-16" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);">
+      <h4 style="margin-top:0;">Biometric Enrollment Checklist</h4>
+      <ul style="padding-left:20px; font-size:0.85rem; color:var(--text-mute); line-height:1.7;">
+        <li>Manager creates student record with Student ID & Course.</li>
+        <li>Student logs in via Student Portal with Student ID.</li>
+        <li>Student receives prompt to capture 5 facial frames.</li>
+        <li>LBPH model automatically trains upon 5th sample.</li>
+        <li>Student status changes to <strong>Verified / Ready</strong>.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Enrolled Student Details Roster -->
+<section class="mt-24 card">
+  <div class="card-header">
+    <div>
+      <div class="eyebrow">Roster & Details</div>
+      <h3 class="section-title">Registered Students Roster</h3>
+      <p class="section-hint">Enrolled students and their biometric capture status.</p>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="refresh-roster-btn" type="button">🔄 Refresh Roster</button>
+  </div>
+
+  <div id="roster-container">
+    <div class="empty-state">Loading enrolled students…</div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function createStudent(event) {
+  event.preventDefault();
+  try {
+    const studentId = document.getElementById('student_id').value.trim();
+    const fullName = document.getElementById('full_name').value.trim();
+    const course = document.getElementById('course').value.trim();
+    const email = document.getElementById('email').value.trim();
+    let deviceId = document.getElementById('device_id').value.trim();
+
+    if (!deviceId) {
+      deviceId = `dev-${studentId.toLowerCase()}`;
+      document.getElementById('device_id').value = deviceId;
+    }
+
+    const payload = {
+      student_id: studentId,
+      full_name: fullName,
+      course: course,
+      email: email,
+      device_id: deviceId,
+    };
+    await api('/api/students', { method: 'POST', body: JSON.stringify(payload) });
+    toast(`Student account "${fullName}" (${studentId}) registered successfully! Student can now log in to complete their face scan.`, 'ok');
+    document.getElementById('register-form').reset();
+    loadRoster();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+async function loadRoster() {
+  const container = document.getElementById('roster-container');
+  try {
+    const res = await fetch('/students');
+    const text = await res.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, 'text/html');
+    const grid = doc.querySelector('.students-grid');
+    const empty = doc.querySelector('.empty-state');
+
+    if (grid) {
+      container.innerHTML = grid.outerHTML;
+    } else if (empty) {
+      container.innerHTML = empty.outerHTML;
+    } else {
+      container.innerHTML = '<div class="empty-state">No students registered yet.</div>';
+    }
+  } catch (e) {
+    container.innerHTML = '<div class="empty-state">Could not load roster.</div>';
+  }
+}
+
+document.getElementById('auto-device-btn').addEventListener('click', () => {
+  const studentId = document.getElementById('student_id').value.trim() || 'student';
+  const genId = `dev-${studentId.toLowerCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  document.getElementById('device_id').value = genId;
+  toast('Device ID generated.');
+});
+
+document.getElementById('register-form').addEventListener('submit', createStudent);
+document.getElementById('refresh-roster-btn').addEventListener('click', loadRoster);
+
+loadRoster();
+</script>
+{% endblock %}
+

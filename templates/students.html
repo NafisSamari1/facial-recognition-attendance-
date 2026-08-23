@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Students — Verascan{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="eyebrow">Roster & Security</div>
+  <h1 class="page-title">Registered students</h1>
+  <p class="page-sub">Manage registered student profiles, facial recognition samples, and 1:1 hardware device bindings.</p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3 class="section-title">Registered students</h3>
+      <p class="section-hint">Everyone enrolled in the system with their biometric status and assigned device ID.</p>
+    </div>
+    <a href="/register" class="btn btn-primary btn-sm">Register new student</a>
+  </div>
+
+  {% if students %}
+  <div class="students-grid">
+    {% for s in students %}
+    <article class="student-card">
+      <div class="student-card__top">
+        <div class="student-avatar">{{ s.full_name.split()[-1][:2]|upper }}</div>
+        <div class="student-card__identity">
+          <h4>{{ s.full_name }}</h4>
+          <p class="mono">{{ s.student_id }}</p>
+        </div>
+        <button class="icon-button ghost" type="button" onclick="removeStudent('{{ s.student_id }}')" title="Delete Student">✕</button>
+      </div>
+
+      <div class="student-meta">
+        <div class="student-meta__item">
+          <span>Course</span>
+          <strong>{{ s.course }}</strong>
+        </div>
+        <div class="student-meta__item">
+          <span>Samples</span>
+          {% if s.face_samples >= 5 %}
+            <strong class="accent">{{ s.face_samples }}</strong>
+          {% elif s.face_samples > 0 %}
+            <strong class="warn">{{ s.face_samples }}</strong>
+          {% else %}
+            <strong class="danger">0</strong>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Device Binding Information -->
+      <div class="mt-12 pt-12" style="border-top: 1px solid rgba(255,255,255,0.08); font-size:0.8rem;">
+        <div class="flex-between">
+          <span style="color:var(--text-mute); font-weight:600;">Bound Device:</span>
+          <span class="mono" style="font-size:0.75rem; color:var(--accent);">
+            {% if s.device_name %}
+              {{ s.device_name }}
+            {% elif s.device_id %}
+              {{ s.device_id[:16] }}…
+            {% else %}
+              <span style="color:var(--text-faint);">Unbound</span>
+            {% endif %}
+          </span>
+        </div>
+
+        {% if s.device_reset_requested %}
+        <div class="hint-pill mt-8" style="background:rgba(225,194,129,0.15); color:var(--warn); border:1px solid var(--warn); padding:6px 10px; border-radius:6px;">
+          ⚠️ Reset Requested: {{ s.device_reset_reason or 'Phone changed/lost' }}
+        </div>
+        {% endif %}
+
+        <div class="mt-8 flex-between">
+          {% if s.device_id %}
+            <button class="btn btn-ghost btn-sm" type="button" onclick="unbindDevice('{{ s.student_id }}', '{{ s.full_name }}')" style="font-size:0.75rem; padding:4px 8px; width:100%;">
+              🔓 Unbind / Reset Device
+            </button>
+          {% else %}
+            <span class="badge badge-warn" style="width:100%; text-align:center;">Awaiting 1st Device Login</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="student-footer mt-12">
+        <span class="badge badge-ok">Enrolled {{ s.created_at[:10] }}</span>
+        {% if s.face_samples >= 5 %}
+          <span class="badge badge-ok">Verified</span>
+        {% elif s.face_samples > 0 %}
+          <span class="badge badge-warn">Needs Samples</span>
+        {% else %}
+          <span class="badge badge-danger">Capture pending</span>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">No students registered yet — start on the Register page.</div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function removeStudent(id) {
+  if (!confirm(`Remove student ${id}? This does not delete their attendance history.`)) return;
+  try {
+    await api(`/api/students/${id}`, { method: 'DELETE' });
+    toast('Student removed');
+    location.reload();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+async function unbindDevice(studentId, fullName) {
+  if (!confirm(`Reset and unbind device for ${fullName} (${studentId})? They will be able to bind a new phone upon their next login.`)) return;
+  try {
+    await api('/api/manager/unbind-device', {
+      method: 'POST',
+      body: JSON.stringify({ student_id: studentId })
+    });
+    toast(`Device binding cleared for ${fullName}. Student can now pair a new phone.`, 'ok');
+    setTimeout(() => location.reload(), 1200);
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+</script>
+{% endblock %}
+

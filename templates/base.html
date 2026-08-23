@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>{% block title %}Verascan{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  </head>
+  <body>
+
+    <div class="shell {% if request.endpoint == 'login_page' %}login-page{% endif %}">
+      {% if request.endpoint != 'login_page' %}
+      <aside class="sidebar">
+        <div class="brand">
+          <img class="brand-logo" src="{{ url_for('static', filename='images/knust-logo-png_seeklogo-618224.png') }}" alt="Verascan logo">
+          <div class="brand-text">
+            <span class="brand-name">Verascan</span>
+            <span class="brand-sub">{% if session.get('role') == 'student' %}Student Portal{% else %}Face attendance{% endif %}</span>
+          </div>
+        </div>
+        <nav class="nav">
+          <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' else '' }}" href="/">Dashboard</a>
+          {% if session.get('role') == 'manager' %}
+            <a class="nav-link {{ 'active' if request.endpoint == 'zone_page' else '' }}" href="/zone-setup">📍 Area Zone</a>
+            <a class="nav-link {{ 'active' if request.endpoint == 'register_page' else '' }}" href="/register">Register</a>
+          {% endif %}
+          <a class="nav-link {{ 'active' if request.endpoint == 'attendance_page' else '' }}" href="/attendance">Attendance</a>
+          <a class="nav-link {{ 'active' if request.endpoint == 'reports_page' else '' }}" href="/reports">{% if session.get('role') == 'student' %}My Reports{% else %}Reports{% endif %}</a>
+          {% if session.get('role') == 'manager' %}
+            <a class="nav-link {{ 'active' if request.endpoint == 'students_page' else '' }}" href="/students">Students</a>
+          {% endif %}
+        </nav>
+
+        <div class="sidebar-foot">
+          <div class="status-chip">
+            <span class="dot dot-live"></span>
+            {% if session.get('role') == 'student' %}
+              Student ID: {{ session.get('student_id') }}
+            {% else %}
+              Manager Portal
+            {% endif %}
+          </div>
+          <div class="sidebar-actions">
+            <button class="icon-button" type="button" data-settings-trigger>⚙ Settings</button>
+            <a class="btn btn-ghost btn-sm" href="{{ url_for('logout') }}">↩ Logout</a>
+          </div>
+          <p class="foot-note">Webcam-based student attendance with a local recognition workflow.</p>
+        </div>
+      </aside>
+      {% endif %}
+
+      <main class="main">
+        {% if request.endpoint != 'login_page' %}
+        <header class="top-bar">
+          <div>
+            <div class="eyebrow">
+              {% if session.get('role') == 'student' %}
+                Student Portal • {{ session.get('course', 'Enrolled') }}
+              {% else %}
+                Attendance Studio • Manager Control
+              {% endif %}
+            </div>
+            <h1 class="page-title compact">
+              {% if session.get('role') == 'student' %}
+                Welcome, {{ session.get('full_name', 'Student') }}
+              {% else %}
+                Everything in one place
+              {% endif %}
+            </h1>
+          </div>
+          <div class="top-bar-actions">
+            <button class="icon-button" type="button" data-settings-trigger>⚙ Settings</button>
+            <a class="icon-button secondary" href="{{ url_for('logout') }}">↩ Logout</a>
+          </div>
+        </header>
+        {% endif %}
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="card mt-16">
+              {% for message in messages %}
+                <div class="hint-pill">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+
+    <div id="settings-panel" class="settings-panel" hidden>
+      <div class="settings-panel__card">
+        <div class="settings-panel__head">
+          <div>
+            <div class="eyebrow">Preferences</div>
+            <h3 class="section-title">Display settings</h3>
+          </div>
+          <button class="icon-button ghost" type="button" id="settings-close">✕</button>
+        </div>
+        <div class="settings-panel__body">
+          <button class="settings-option" id="theme-toggle-panel" type="button">🌙 Toggle dark/light mode</button>
+          <a class="settings-option" href="{{ url_for('logout') }}">↩ Sign out</a>
+        </div>
+      </div>
+    </div>
+
+    <nav class="mobile-nav" aria-label="Mobile navigation">
+      <a class="mobile-nav-link {{ 'active' if request.endpoint == 'dashboard' else '' }}" href="/">⌂<span>Home</span></a>
+      {% if session.get('role') == 'manager' %}
+        <a class="mobile-nav-link {{ 'active' if request.endpoint == 'zone_page' else '' }}" href="/zone-setup">📍<span>Zone</span></a>
+        <a class="mobile-nav-link {{ 'active' if request.endpoint == 'register_page' else '' }}" href="/register">✚<span>Register</span></a>
+      {% endif %}
+      <a class="mobile-nav-link {{ 'active' if request.endpoint == 'attendance_page' else '' }}" href="/attendance">◎<span>Scan</span></a>
+      {% if session.get('role') == 'manager' %}
+        <a class="mobile-nav-link {{ 'active' if request.endpoint == 'students_page' else '' }}" href="/students">👥<span>Students</span></a>
+      {% endif %}
+      <a class="mobile-nav-link {{ 'active' if request.endpoint == 'reports_page' else '' }}" href="/reports">📊<span>Reports</span></a>
+      <button class="mobile-nav-link" type="button" data-settings-trigger>⚙<span>Settings</span></button>
+    </nav>
+
+
+
+    <div id="toast-root"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

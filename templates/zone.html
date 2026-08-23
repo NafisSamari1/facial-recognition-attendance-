@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+{% block title %}Area Zone Setup — Verascan{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="eyebrow">Geofence Intelligence</div>
+  <h1 class="page-title">Attendance Area Zone</h1>
+  <p class="page-sub">Define where student scans are permitted. Click anywhere on the map, search places worldwide, or drag the pin to set the center coordinates.</p>
+</div>
+
+<div class="grid grid-2">
+  <!-- Left Side: Interactive Map & Location Search -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="section-title">📍 Remote Map Location Picker</h3>
+        <p class="section-hint">Click anywhere or drag the marker to set the center point anywhere in the world.</p>
+      </div>
+      <span class="status-chip" id="zone-status-chip"><span class="dot"></span>Loading Zone</span>
+    </div>
+
+    <!-- Location Search Box -->
+    <div class="search-box-row" style="position:relative; margin-bottom:12px;">
+      <div style="display:flex; gap:8px;">
+        <input id="place-search-input" placeholder="🔍 Search address or building (e.g. KNUST Great Hall, Kumasi)" style="flex:1; padding:10px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:var(--bg-card, #1a232f); color:var(--text, #fff);">
+        <button class="btn btn-primary btn-sm" id="place-search-btn" type="button">Search</button>
+      </div>
+      <div id="search-results-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:999; background:#1a232f; border:1px solid var(--accent); border-radius:8px; max-height:200px; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.5); margin-top:4px;"></div>
+    </div>
+
+    <!-- Interactive Leaflet Map -->
+    <div id="interactive-map" style="height: 380px; width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background:#0f1720;"></div>
+    <div style="font-size:0.8rem; color:#7d8a7a; margin-top:8px; text-align:center;">
+      💡 Tip: Click anywhere on the map or drag the pin to move the attendance zone center.
+    </div>
+  </div>
+
+  <!-- Right Side: Zone Configuration Form & Session Signal Dispatcher -->
+  <div class="grid grid-1 gap-24">
+    <!-- Card 1: Geofence Settings Form -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="section-title">⚙ Zone Parameters</h3>
+          <p class="section-hint">Configure name, precise coordinates, and radius boundary.</p>
+        </div>
+      </div>
+
+      <form id="zone-setup-form">
+        <div class="field mb-16">
+          <label for="zone-name" style="display:block; margin-bottom:6px; font-weight:600;">Zone Name / Description</label>
+          <input id="zone-name" placeholder="e.g. Main Science Auditorium" required style="width:100%; padding:10px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:var(--bg-card, #1a232f); color:var(--text, #fff);">
+        </div>
+
+        <div class="grid grid-2 gap-12">
+          <div class="field">
+            <label for="zone-lat" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Center Latitude</label>
+            <input id="zone-lat" type="number" step="0.000001" placeholder="6.6731" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:var(--bg-card, #1a232f); color:var(--text, #fff);">
+          </div>
+          <div class="field">
+            <label for="zone-lng" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Center Longitude</label>
+            <input id="zone-lng" type="number" step="0.000001" placeholder="-1.5670" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:var(--bg-card, #1a232f); color:var(--text, #fff);">
+          </div>
+        </div>
+
+        <div class="field mt-16">
+          <div class="flex-between mb-4">
+            <label for="zone-radius" style="font-weight:600;">Allowed Radius Boundary</label>
+            <span id="radius-val-disp" class="mono" style="color:var(--accent); font-weight:700;">100 meters</span>
+          </div>
+          <input id="zone-radius" type="range" min="10" max="2000" step="10" value="100" style="width:100%;">
+        </div>
+
+        <div class="flex-between mt-20 gap-12">
+          <button class="btn btn-ghost" id="use-my-gps-btn" type="button">🎯 Use My Current GPS Location</button>
+          <button class="btn btn-primary" type="submit">💾 Save Area Zone</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Card 2: Active Session Broadcast Panel -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="section-title">📡 Broadcast Attendance Session</h3>
+          <p class="section-hint">Open attendance taking window for students in this zone.</p>
+        </div>
+        <span class="status-chip" id="session-status-chip"><span class="dot"></span>Idle</span>
+      </div>
+
+      <div id="zone-active-session-banner" class="hint-pill mb-16" style="display:none; background: rgba(47,140,94,0.15); border: 1px solid var(--accent); color: var(--accent); padding: 12px 16px; border-radius: 10px;">
+        <div class="flex-between">
+          <div>
+            <strong id="zone-session-title">CS101 Session</strong>
+            <div style="font-size:0.85rem; opacity:0.9; margin-top:2px;">Window closes in: <span id="zone-session-timer" style="font-weight:700; font-family:monospace;">00:00</span></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="zone-end-session-btn" type="button">Stop Signal</button>
+        </div>
+      </div>
+
+      <form id="zone-session-form">
+        <div class="grid grid-2 gap-12">
+          <div class="field">
+            <label for="zone-session-course" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Target Course</label>
+            <select id="zone-session-course" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:var(--bg-card, #1a232f); color:var(--text, #fff);">
+              <option value="ALL">ALL Courses & Classes</option>
+              <option value="BSc Computer Science">BSc Computer Science</option>
+              <option value="BSc Electrical Engineering">BSc Electrical Engineering</option>
+              <option value="BSc Business Administration">BSc Business Administration</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="zone-session-duration" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Time Window</label>
+            <select id="zone-session-duration" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:var(--bg-card, #1a232f); color:var(--text, #fff);">
+              <option value="5">5 Minutes</option>
+              <option value="15" selected>15 Minutes</option>
+              <option value="30">30 Minutes</option>
+              <option value="60">60 Minutes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-16">
+          <button class="btn btn-primary" type="submit" style="width:100%;">📡 Open Attendance Window Now</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let zoneMap = null;
+let zoneMarker = null;
+let zoneCircle = null;
+let sessionInterval = null;
+
+async function initZonePage() {
+  setupRadiusSlider();
+  setupLocationSearch();
+  await loadCurrentZone();
+  await loadActiveSession();
+  setupFormHandlers();
+}
+
+function setupRadiusSlider() {
+  const slider = document.getElementById('zone-radius');
+  const disp = document.getElementById('radius-val-disp');
+  if (slider && disp) {
+    slider.addEventListener('input', () => {
+      const val = slider.value;
+      disp.textContent = `${val} meters`;
+      if (zoneCircle) {
+        zoneCircle.setRadius(parseFloat(val));
+      }
+    });
+  }
+}
+
+async function loadCurrentZone() {
+  try {
+    const res = await api('/api/zone');
+    if (res.ok && res.zone) {
+      document.getElementById('zone-name').value = res.zone.name || 'Lecture Hall Zone';
+      document.getElementById('zone-lat').value = res.zone.lat.toFixed(6);
+      document.getElementById('zone-lng').value = res.zone.lng.toFixed(6);
+      document.getElementById('zone-radius').value = res.zone.radius_meters || 100;
+      document.getElementById('radius-val-disp').textContent = `${res.zone.radius_meters || 100} meters`;
+      document.getElementById('zone-status-chip').innerHTML = '<span class="dot dot-live"></span>Active Zone Set';
+      initMap(res.zone.lat, res.zone.lng, res.zone.radius_meters);
+    } else {
+      const defaultLat = 6.6731, defaultLng = -1.5670, defaultRadius = 100;
+      document.getElementById('zone-lat').value = defaultLat;
+      document.getElementById('zone-lng').value = defaultLng;
+      document.getElementById('zone-status-chip').innerHTML = '<span class="dot"></span>Not Set';
+      initMap(defaultLat, defaultLng, defaultRadius);
+    }
+  } catch (e) {
+    initMap(6.6731, -1.5670, 100);
+  }
+}
+
+function initMap(lat, lng, radius) {
+  const container = document.getElementById('interactive-map');
+  if (!container) return;
+
+  if (typeof L !== 'undefined') {
+    if (!zoneMap) {
+      zoneMap = L.map('interactive-map').setView([lat, lng], 16);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+      }).addTo(zoneMap);
+
+      zoneMap.on('click', (e) => {
+        updatePositionInputs(e.latlng.lat, e.latlng.lng);
+      });
+    } else {
+      zoneMap.setView([lat, lng], 16);
+    }
+
+    if (zoneMarker) zoneMap.removeLayer(zoneMarker);
+    if (zoneCircle) zoneMap.removeLayer(zoneCircle);
+
+    zoneMarker = L.marker([lat, lng], { draggable: true }).addTo(zoneMap);
+    zoneMarker.on('dragend', (e) => {
+      const pos = e.target.getLatLng();
+      updatePositionInputs(pos.lat, pos.lng);
+    });
+
+    zoneCircle = L.circle([lat, lng], {
+      color: '#2f8c5e',
+      fillColor: '#2f8c5e',
+      fillOpacity: 0.25,
+      radius: parseFloat(radius) || 100
+    }).addTo(zoneMap);
+  } else {
+    container.innerHTML = `<div style="padding:40px; text-align:center; color:#7d8a7a;">📍 Map preview centered at Lat ${lat}, Lng ${lng} (${radius}m radius)</div>`;
+  }
+}
+
+function updatePositionInputs(lat, lng) {
+  document.getElementById('zone-lat').value = lat.toFixed(6);
+  document.getElementById('zone-lng').value = lng.toFixed(6);
+
+  if (zoneMarker) zoneMarker.setLatLng([lat, lng]);
+  if (zoneCircle) zoneCircle.setLatLng([lat, lng]);
+  if (zoneMap) zoneMap.panTo([lat, lng]);
+}
+
+function setupLocationSearch() {
+  const input = document.getElementById('place-search-input');
+  const btn = document.getElementById('place-search-btn');
+  const dropdown = document.getElementById('search-results-dropdown');
+
+  const doSearch = async () => {
+    const q = input.value.trim();
+    if (!q) return;
+    toast('Searching location…');
+    try {
+      const res = await api(`/api/geocode?q=${encodeURIComponent(q)}`);
+      if (res.ok && res.results && res.results.length > 0) {
+        dropdown.innerHTML = res.results.map((r, i) => `
+          <div class="search-item" data-index="${i}" style="padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer; font-size:0.85rem;" onmouseover="this.style.background='rgba(47,140,94,0.2)'" onmouseout="this.style.background='transparent'">
+            📍 ${r.display_name}
+          </div>
+        `).join('');
+        dropdown.style.display = 'block';
+
+        dropdown.querySelectorAll('.search-item').forEach((el, index) => {
+          el.addEventListener('click', () => {
+            const loc = res.results[index];
+            updatePositionInputs(loc.lat, loc.lng);
+            document.getElementById('zone-name').value = loc.display_name.split(',')[0];
+            dropdown.style.display = 'none';
+            toast(`Moved zone to: ${loc.display_name.split(',')[0]}`);
+          });
+        });
+      } else {
+        toast('No matching locations found.', 'warn');
+        dropdown.style.display = 'none';
+      }
+    } catch (e) {
+      toast('Location search failed.', 'error');
+    }
+  };
+
+  if (btn) btn.addEventListener('click', doSearch);
+  if (input) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        doSearch();
+      }
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-box-row')) {
+      dropdown.style.display = 'none';
+    }
+  });
+}
+
+function setupFormHandlers() {
+  const form = document.getElementById('zone-setup-form');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('zone-name').value;
+      const lat = parseFloat(document.getElementById('zone-lat').value);
+      const lng = parseFloat(document.getElementById('zone-lng').value);
+      const radius = parseFloat(document.getElementById('zone-radius').value);
+
+      try {
+        const res = await api('/api/zone', {
+          method: 'POST',
+          body: JSON.stringify({ name, lat, lng, radius_meters: radius })
+        });
+        toast('Area Zone saved successfully!');
+        document.getElementById('zone-status-chip').innerHTML = '<span class="dot dot-live"></span>Active Zone Set';
+        updatePositionInputs(lat, lng);
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    });
+  }
+
+  const gpsBtn = document.getElementById('use-my-gps-btn');
+  if (gpsBtn) {
+    gpsBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        toast('Geolocation not supported by browser', 'error');
+        return;
+      }
+      toast('Fetching GPS coordinates…');
+      navigator.geolocation.getCurrentPosition((pos) => {
+        updatePositionInputs(pos.coords.latitude, pos.coords.longitude);
+        toast('Current GPS location applied!');
+      }, () => {
+        toast('GPS access denied.', 'error');
+      }, { enableHighAccuracy: true });
+    });
+  }
+
+  ['zone-lat', 'zone-lng'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', () => {
+        const lat = parseFloat(document.getElementById('zone-lat').value);
+        const lng = parseFloat(document.getElementById('zone-lng').value);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          if (zoneMarker) zoneMarker.setLatLng([lat, lng]);
+          if (zoneCircle) zoneCircle.setLatLng([lat, lng]);
+          if (zoneMap) zoneMap.panTo([lat, lng]);
+        }
+      });
+    }
+  });
+
+  const sessionForm = document.getElementById('zone-session-form');
+  if (sessionForm) {
+    sessionForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const course = document.getElementById('zone-session-course').value;
+      const duration = parseInt(document.getElementById('zone-session-duration').value);
+
+      try {
+        const res = await api('/api/sessions/start', {
+          method: 'POST',
+          body: JSON.stringify({ course, duration_minutes: duration })
+        });
+        toast(`Attendance session broadcasted for ${duration} mins!`);
+        renderSessionBanner(res.session);
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    });
+  }
+
+  const endBtn = document.getElementById('zone-end-session-btn');
+  if (endBtn) {
+    endBtn.addEventListener('click', async () => {
+      try {
+        const res = await api('/api/sessions/active');
+        if (res.ok && res.session) {
+          await api('/api/sessions/end', {
+            method: 'POST',
+            body: JSON.stringify({ session_id: res.session.id })
+          });
+          toast('Attendance window closed.');
+          renderInactiveSession();
+        }
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    });
+  }
+}
+
+async function loadActiveSession() {
+  try {
+    const res = await api('/api/sessions/active');
+    if (res.ok && res.session) {
+      renderSessionBanner(res.session);
+    } else {
+      renderInactiveSession();
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function renderSessionBanner(session) {
+  const banner = document.getElementById('zone-active-session-banner');
+  const chip = document.getElementById('session-status-chip');
+  const title = document.getElementById('zone-session-title');
+  const timer = document.getElementById('zone-session-timer');
+
+  if (banner) banner.style.display = 'block';
+  if (chip) chip.innerHTML = '<span class="dot dot-live"></span>Broadcasting';
+  if (title) title.textContent = session.title || `${session.course} Session`;
+
+  let remaining = session.seconds_remaining || 0;
+  if (sessionInterval) clearInterval(sessionInterval);
+
+  const updateTimer = () => {
+    if (remaining <= 0) {
+      clearInterval(sessionInterval);
+      renderInactiveSession();
+      toast('Attendance session expired.', 'warn');
+      return;
+    }
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    if (timer) timer.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    remaining--;
+  };
+
+  updateTimer();
+  sessionInterval = setInterval(updateTimer, 1000);
+}
+
+function renderInactiveSession() {
+  const banner = document.getElementById('zone-active-session-banner');
+  const chip = document.getElementById('session-status-chip');
+  if (banner) banner.style.display = 'none';
+  if (chip) chip.innerHTML = '<span class="dot"></span>Idle';
+  if (sessionInterval) clearInterval(sessionInterval);
+}
+
+initZonePage();
+</script>
+{% endblock %}

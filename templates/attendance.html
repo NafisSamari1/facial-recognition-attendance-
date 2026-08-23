@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}Take Attendance{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="eyebrow">Recognition</div>
+  <h1 class="page-title">Take attendance</h1>
+  <p class="page-sub">Point the camera at a student face, confirm the result, and log the attendance event.</p>
+</div>
+
+<!-- Active Manager Attendance Signal Banner -->
+<div class="card mb-24" id="attendance-signal-card" style="border: 1px solid rgba(255,255,255,0.15); border-left: 4px solid #7d8a7a;">
+  <div class="flex-between">
+    <div>
+      <div class="eyebrow" id="signal-eyebrow">ATTENDANCE SESSION STATUS</div>
+      <h3 class="section-title" id="signal-title" style="margin-top:2px;">Checking for active session…</h3>
+      <p class="section-hint" id="signal-sub">Waiting for session signal from manager broadcast</p>
+    </div>
+    <div style="text-align:right;">
+      <div class="mono" id="signal-timer" style="font-size:1.5rem; font-weight:700; color:var(--accent);">--:--</div>
+      <span class="status-chip mt-4" id="signal-badge"><span class="dot"></span>Checking</span>
+    </div>
+  </div>
+
+  <div id="geofence-status-bar" class="mt-12 flex-between" style="font-size:0.85rem; padding:10px 14px; border-radius:8px; background:rgba(255,255,255,0.05); flex-wrap:wrap; gap:8px;">
+    <span id="geofence-text">📍 GPS Check: Click "Refresh GPS" to verify your location inside the zone</span>
+    <button class="btn btn-ghost btn-sm" id="refresh-gps-banner-btn" type="button" style="padding:4px 10px; font-size:0.8rem;">🔄 Refresh GPS & Recheck Zone</button>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="section-title">Live recognition</h3>
+        <p class="section-hint">Point the camera at student face to scan.</p>
+      </div>
+      <span class="hint-pill" id="status-pill">Waiting</span>
+    </div>
+    <video id="video" autoplay playsinline muted style="width:100%;border-radius:12px;background:#0f1720;"></video>
+    <div class="flex-between mt-16">
+      <button class="btn btn-primary" id="scan-btn" type="button">Scan now</button>
+      <button class="btn btn-ghost" id="locate-btn" type="button">🔄 Refresh GPS Location</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="section-title">Recognition result</h3>
+        <p class="section-hint">Match confidence, status, and attendance confirmation appear here.</p>
+      </div>
+    </div>
+    <div id="result-panel" class="result-panel">
+      <div class="empty-state">No scan yet.</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentResult = null;
+let currentLocation = null;
+let activeSessionData = null;
+let isZoneValid = false;
+let sessionTimerInterval = null;
+
+async function initCamera() {
+  const video = document.getElementById('video');
+  await startCamera(video);
+}
+
+async function checkSessionAndZone() {
+  try {
+    const res = await api('/api/sessions/active');
+    const card = document.getElementById('attendance-signal-card');
+    const eyebrow = document.getElementById('signal-eyebrow');
+    const title = document.getElementById('signal-title');
+    const sub = document.getElementById('signal-sub');
+    const timer = document.getElementById('signal-timer');
+    const badge = document.getElementById('signal-badge');
+
+    if (res.ok && res.session) {
+      activeSessionData = res.session;
+      card.style.borderLeft = '4px solid #2f8c5e';
+      eyebrow.textContent = '🟢 ACTIVE ATTENDANCE SIGNAL';
+      title.textContent = res.session.title || `${res.session.course} Session`;
+      sub.textContent = `Attendance window active for ${res.session.course}. Verify your GPS location to scan.`;
+      badge.innerHTML = '<span class="dot dot-live"></span>Window Open';
+
+      let remaining = res.session.seconds_remaining || 0;
+      if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+
+      const updateCountdown = () => {
+        if (remaining <= 0) {
+          clearInterval(sessionTimerInterval);
+          activeSessionData = null;
+          card.style.borderLeft = '4px solid #e74c3c';
+          title.textContent = 'Attendance Window Expired';
+          sub.textContent = 'The active attendance session has closed. Contact manager to reopen.';
+          badge.innerHTML = '<span class="dot" style="background:#e74c3c;"></span>Closed';
+          timer.textContent = '00:00';
+          if (currentResult) renderResult(currentResult);
+          return;
+        }
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        timer.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        remaining--;
+      };
+
+      updateCountdown();
+      sessionTimerInterval = setInterval(updateCountdown, 1000);
+    } else {
+      activeSessionData = null;
+      card.style.borderLeft = '4px solid #e74c3c';
+      eyebrow.textContent = '🔴 ATTENDANCE WINDOW CLOSED';
+      title.textContent = 'No Active Attendance Signal';
+      sub.textContent = 'Manager has not broadcasted an active attendance session yet.';
+      timer.textContent = '--:--';
+      badge.innerHTML = '<span class="dot" style="background:#e74c3c;"></span>Idle';
+    }
+  } catch (e) {
+    /* ignore session fetch errors */
+  }
+}
+
+async function scanNow() {
+  const video = document.getElementById('video');
+  const frame = grabFrame(video);
+  const status = document.getElementById('status-pill');
+  status.textContent = 'Scanning…';
+  try {
+    const result = await api('/api/recognize', {
+      method: 'POST',
+      body: JSON.stringify({ frame }),
+    });
+    currentResult = result;
+    renderResult(result);
+    status.textContent = result.matched ? 'Match found' : 'Review needed';
+  } catch (e) {
+    status.textContent = 'Error';
+    toast(e.message, 'error');
+  }
+}
+
+function renderResult(result) {
+  const panel = document.getElementById('result-panel');
+  if (!result || !result.face_found) {
+    panel.innerHTML = '<div class="empty-state">No face detected.</div>';
+    return;
+  }
+
+  const isSessionOpen = !!activeSessionData;
+  const canConfirm = isSessionOpen && isZoneValid;
+  const btnDisabledAttr = canConfirm ? '' : 'disabled';
+  
+  let lockReason = '';
+  if (!isSessionOpen) {
+    lockReason = '<div style="color:#e74c3c; font-size:0.85rem; margin-top:8px;">⚠️ Attendance session is closed. Waiting for manager signal.</div>';
+  } else if (!isZoneValid) {
+    lockReason = '<div style="color:#e74c3c; font-size:0.85rem; margin-top:8px;">⚠️ You are outside the attendance zone. Move into the area and click "Refresh GPS".</div>';
+  }
+
+  panel.innerHTML = `
+    <div class="result-grid">
+      <div class="result-row"><span class="result-label">Student ID</span><span class="result-value">${result.student_id || 'Unknown'}</span></div>
+      <div class="result-row"><span class="result-label">Full Name</span><span class="result-value">${result.full_name || 'Unregistered'}</span></div>
+      <div class="result-row"><span class="result-label">Confidence</span><span class="result-value">${result.confidence}%</span></div>
+      <div class="result-row wide"><span class="result-label">Status</span><span class="result-value">${result.reason || 'unknown'}</span></div>
+    </div>
+    <div class="mt-16">
+      <button class="btn btn-primary" id="confirm-btn" type="button" ${btnDisabledAttr}>Confirm attendance</button>
+      ${lockReason}
+    </div>
+  `;
+
+  const confirmBtn = document.getElementById('confirm-btn');
+  if (confirmBtn && canConfirm) {
+    confirmBtn.addEventListener('click', confirmAttendance);
+  }
+}
+
+async function confirmAttendance() {
+  if (!currentResult || !currentResult.student_id) {
+    toast('No recognized student to confirm.', 'error');
+    return;
+  }
+  if (!currentLocation) {
+    toast('GPS location required. Click "Refresh GPS" first.', 'error');
+    return;
+  }
+  try {
+    const result = await api('/api/mark-attendance', {
+      method: 'POST',
+      body: JSON.stringify({
+        student_id: currentResult.student_id,
+        confidence: currentResult.confidence,
+        device_id: getDeviceId(),
+        device_name: typeof getDeviceName === 'function' ? getDeviceName() : null,
+        location_lat: currentLocation.latitude,
+        location_lng: currentLocation.longitude,
+      }),
+    });
+    toast(result.message || 'Attendance recorded.');
+
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+function getLocation() {
+  if (!navigator.geolocation) {
+    toast('Geolocation is not available in this browser.', 'error');
+    return;
+  }
+  toast('Fetching fresh GPS location…');
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    currentLocation = pos.coords;
+    const text = document.getElementById('geofence-text');
+
+    try {
+      const zoneRes = await api('/api/zone/check', {
+        method: 'POST',
+        body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+      });
+
+      if (zoneRes.allowed) {
+        isZoneValid = true;
+        if (text) text.innerHTML = `<span style="color:#2f8c5e; font-weight:600;">🟢 Geofence Validated:</span> ${zoneRes.message}`;
+        toast('In Attendance Zone!');
+      } else {
+        isZoneValid = false;
+        if (text) text.innerHTML = `<span style="color:#e74c3c; font-weight:600;">🔴 Outside Allowed Area:</span> ${zoneRes.message}`;
+        toast('Outside Attendance Zone!', 'error');
+      }
+    } catch (e) {
+      isZoneValid = true;
+      if (text) text.textContent = `📍 Location Captured: Lat ${pos.coords.latitude.toFixed(4)}, Lng ${pos.coords.longitude.toFixed(4)}`;
+    }
+
+    if (currentResult) renderResult(currentResult);
+  }, (err) => {
+    toast('Location access denied or timed out.', 'error');
+  }, { enableHighAccuracy: true });
+}
+
+document.getElementById('scan-btn').addEventListener('click', scanNow);
+document.getElementById('locate-btn').addEventListener('click', getLocation);
+const bannerGpsBtn = document.getElementById('refresh-gps-banner-btn');
+if (bannerGpsBtn) bannerGpsBtn.addEventListener('click', getLocation);
+
+checkSessionAndZone();
+getLocation();
+initCamera().catch(() => toast('Camera unavailable. Please allow camera access.', 'error'));
+</script>
+{% endblock %}
+
