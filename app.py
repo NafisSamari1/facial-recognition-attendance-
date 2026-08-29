@@ -35,25 +35,35 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key')
 db.init_db()
 
 
-def require_login():
-    if request.endpoint in {"login_page", "static"}:
-        return None
-    if not session.get("logged_in"):
-        return redirect(url_for("login_page"))
-    return None
+MANAGER_PAGES = {"register_page", "zone_page", "reports_page", "students_page"}
+MANAGER_API_ENDPOINTS = {
+    "api_create_student",
+    "api_start_session",
+    "api_end_session",
+    "api_delete_student",
+    "api_manager_unbind_device"
+}
 
+@app.before_request
+def restrict_manager_access():
+    # If the endpoint is restricted, check authentication and authorization
+    is_restricted_api = request.endpoint in MANAGER_API_ENDPOINTS or (request.endpoint == "api_zone" and request.method == "POST")
+    is_restricted_page = request.endpoint in MANAGER_PAGES
+
+    if is_restricted_page or is_restricted_api:
+        if not session.get("logged_in"):
+            if is_restricted_api:
+                return jsonify({"ok": False, "error": "Authentication required"}), 401
+            return redirect(url_for("login_page"))
+        
+        if session.get("role") != "manager":
+            if is_restricted_api:
+                return jsonify({"ok": False, "error": "Manager access required"}), 403
+            flash("Access restricted to Managers.")
+            return redirect(url_for("dashboard"))
 
 def is_manager():
     return session.get("logged_in") and session.get("role") == "manager"
-
-
-def require_manager():
-    if not session.get("logged_in"):
-        return redirect(url_for("login_page"))
-    if not is_manager():
-        flash("Access restricted to Managers.")
-        return redirect(url_for("dashboard"))
-    return None
 
 
 # --------------------------------------------------------------- pages -----
@@ -77,71 +87,75 @@ def login_page():
         return redirect(url_for("dashboard"))
 
     if request.method == "POST":
-        login_type = request.form.get("login_type", "manager")
+        student_id = (request.form.get("student_id") or "").strip()
+        device_id = (request.form.get("device_id") or "").strip()
+        device_name = (request.form.get("device_name") or "").strip()
 
-        if login_type == "student":
-            student_id = (request.form.get("student_id") or "").strip()
-            device_id = (request.form.get("device_id") or "").strip()
-            device_name = (request.form.get("device_name") or "").strip()
+        if not student_id:
+            flash("Please enter your Student ID.")
+            return render_template("login_student.html")
+        
+        student = db.get_student(student_id)
+        if not student:
+            flash(f"Student ID '{student_id}' not found. Please verify or ask a Manager to register your account.")
+            return render_template("login_student.html")
 
-            if not student_id:
-                flash("Please enter your Student ID.")
-                return render_template("login.html")
-            
-            student = db.get_student(student_id)
-            if not student:
-                flash(f"Student ID '{student_id}' not found. Please verify or ask a Manager to register your account.")
-                return render_template("login.html")
+        # Strict 1:1 Device Binding Checks
+        if device_id:
+            # Check 1: Is this student's account bound to a different device?
+            if student.get("device_id") and student["device_id"] != device_id:
+                bound_name = student.get("device_name") or "another device"
+                flash(f"❌ Device Binding Mismatch: Account '{student_id}' is registered to a different phone ({bound_name}). You cannot log in from this device. If you lost or changed your phone, submit a device reset request to your manager.")
+                return render_template("login_student.html")
 
-            # Strict 1:1 Device Binding Checks
-            if device_id:
-                # Check 1: Is this student's account bound to a different device?
-                if student.get("device_id") and student["device_id"] != device_id:
-                    bound_name = student.get("device_name") or "another device"
-                    flash(f"❌ Device Binding Mismatch: Account '{student_id}' is registered to a different phone ({bound_name}). You cannot log in from this device. If you lost or changed your phone, submit a device reset request to your manager.")
-                    return render_template("login.html")
+            # Check 2: Is this device already assigned to another student?
+            assigned_other = db.get_student_by_device(device_id)
+            if assigned_other and assigned_other["student_id"] != student_id:
+                flash(f"❌ Device Sharing Restriction: This device is already registered to another student ({assigned_other['full_name']}). Multiple students cannot share the same device.")
+                return render_template("login_student.html")
 
-                # Check 2: Is this device already assigned to another student?
-                assigned_other = db.get_student_by_device(device_id)
-                if assigned_other and assigned_other["student_id"] != student_id:
-                    flash(f"❌ Device Sharing Restriction: This device is already registered to another student ({assigned_other['full_name']}). Multiple students cannot share the same device.")
-                    return render_template("login.html")
+            # If student is unbound, bind this device to their account automatically
+            if not student.get("device_id"):
+                db.assign_device(student_id, device_id, device_name)
 
-                # If student is unbound, bind this device to their account automatically
-                if not student.get("device_id"):
-                    db.assign_device(student_id, device_id, device_name)
+        session["logged_in"] = True
+        session["role"] = "student"
+        session["username"] = student["full_name"]
+        session["student_id"] = student["student_id"]
+        session["full_name"] = student["full_name"]
+        session["course"] = student["course"]
+        flash(f"Welcome back, {student['full_name']}.")
+        return redirect(url_for("dashboard"))
 
+    return render_template("login_student.html")
+
+
+@app.route("/login/manager", methods=["GET", "POST"])
+def login_manager():
+    if session.get("logged_in"):
+        return redirect(url_for("dashboard"))
+
+    if request.method == "POST":
+        username = (request.form.get("username") or "").strip()
+        password = request.form.get("password") or ""
+
+        expected_user = os.environ.get("APP_USERNAME", "admin")
+        expected_pass = os.environ.get("APP_PASSWORD", "admin123")
+
+        if not username or not password:
+            flash("Username and password are required.")
+            return render_template("login_manager.html")
+
+        if username == expected_user and password == expected_pass:
             session["logged_in"] = True
-            session["role"] = "student"
-            session["username"] = student["full_name"]
-            session["student_id"] = student["student_id"]
-            session["full_name"] = student["full_name"]
-            session["course"] = student["course"]
-            flash(f"Welcome back, {student['full_name']}.")
+            session["role"] = "manager"
+            session["username"] = username
+            flash("Welcome back to Verascan Manager Portal.")
             return redirect(url_for("dashboard"))
 
+        flash("Invalid manager username or password.")
 
-        else:
-            username = (request.form.get("username") or "").strip()
-            password = request.form.get("password") or ""
-
-            expected_user = os.environ.get("APP_USERNAME", "admin")
-            expected_pass = os.environ.get("APP_PASSWORD", "admin123")
-
-            if not username or not password:
-                flash("Username and password are required.")
-                return render_template("login.html")
-
-            if username == expected_user and password == expected_pass:
-                session["logged_in"] = True
-                session["role"] = "manager"
-                session["username"] = username
-                flash("Welcome back to Verascan Manager Portal.")
-                return redirect(url_for("dashboard"))
-
-            flash("Invalid manager username or password.")
-
-    return render_template("login.html")
+    return render_template("login_manager.html")
 
 
 @app.route("/logout")
@@ -152,9 +166,6 @@ def logout():
 
 @app.route("/register")
 def register_page():
-    guard = require_manager()
-    if guard:
-        return guard
     return render_template("register.html")
 
 
@@ -167,24 +178,16 @@ def attendance_page():
 
 @app.route("/zone-setup")
 def zone_page():
-    guard = require_manager()
-    if guard:
-        return guard
     return render_template("zone.html")
 
 
 @app.route("/reports")
 def reports_page():
-    if not session.get("logged_in"):
-        return redirect(url_for("login_page"))
     return render_template("reports.html")
 
 
 @app.route("/students")
 def students_page():
-    guard = require_manager()
-    if guard:
-        return guard
     return render_template("students.html", students=db.list_students())
 
 
@@ -217,8 +220,6 @@ def api_geocode():
 
 @app.route("/api/students", methods=["POST"])
 def api_create_student():
-    if not is_manager():
-        return jsonify({"ok": False, "error": "Manager access required to create student accounts"}), 403
 
     payload = request.get_json(force=True)
     student_id = (payload.get("student_id") or "").strip()
@@ -275,6 +276,7 @@ def api_train():
         return jsonify({"ok": False, "error": "Unauthorized to train recognition model"}), 403
     result = face_utils.train_model()
     return jsonify(result)
+
 
 
 
@@ -383,8 +385,6 @@ def api_request_device_reset():
 
 @app.route("/api/manager/unbind-device", methods=["POST"])
 def api_manager_unbind_device():
-    if not is_manager():
-        return jsonify({"ok": False, "error": "Manager access required"}), 403
     payload = request.get_json(force=True) or {}
     student_id = (payload.get("student_id") or "").strip()
     if not student_id:
@@ -397,8 +397,6 @@ def api_manager_unbind_device():
 @app.route("/api/zone", methods=["GET", "POST"])
 def api_zone():
     if request.method == "POST":
-        if not is_manager():
-            return jsonify({"ok": False, "error": "Manager access required to create or configure area zone"}), 403
         payload = request.get_json(force=True)
         lat = payload.get("lat")
         lng = payload.get("lng")
@@ -436,8 +434,6 @@ def api_active_session():
 
 @app.route("/api/sessions/start", methods=["POST"])
 def api_start_session():
-    if not is_manager():
-        return jsonify({"ok": False, "error": "Manager access required to broadcast attendance prompt signal"}), 403
 
     payload = request.get_json(force=True)
     course = (payload.get("course") or "ALL").strip()
@@ -450,8 +446,6 @@ def api_start_session():
 
 @app.route("/api/sessions/end", methods=["POST"])
 def api_end_session():
-    if not is_manager():
-        return jsonify({"ok": False, "error": "Manager access required to stop attendance session signal"}), 403
 
     payload = request.get_json(force=True)
     session_id = payload.get("session_id")
@@ -463,8 +457,6 @@ def api_end_session():
 
 @app.route("/api/students/<student_id>", methods=["DELETE"])
 def api_delete_student(student_id):
-    if not is_manager():
-        return jsonify({"ok": False, "error": "Manager access required to remove student records"}), 403
 
     db.delete_student(student_id)
     return jsonify({"ok": True})

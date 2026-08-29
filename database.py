@@ -37,7 +37,7 @@ def init_db():
         """
     )
     # Safely migrate existing databases if columns are missing
-    for col, col_type in [("device_name", "TEXT"), ("device_reset_requested", "INTEGER DEFAULT 0"), ("device_reset_reason", "TEXT")]:
+    for col, col_type in [("email", "TEXT"), ("device_id", "TEXT"), ("device_name", "TEXT"), ("device_reset_requested", "INTEGER DEFAULT 0"), ("device_reset_reason", "TEXT")]:
         try:
             conn.execute(f"ALTER TABLE students ADD COLUMN {col} {col_type}")
         except sqlite3.OperationalError:
