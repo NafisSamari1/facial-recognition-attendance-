@@ -36,7 +36,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key')
 db.init_db()
 
 
-MANAGER_PAGES = {"register_page", "zone_page", "reports_page", "students_page"}
+MANAGER_PAGES = {"register_page", "zone_page", "students_page"}
 MANAGER_API_ENDPOINTS = {
     "api_create_student",
     "api_courses",
@@ -227,6 +227,8 @@ def zone_page():
 
 @app.route("/reports")
 def reports_page():
+    if not session.get("logged_in"):
+        return redirect(url_for("login_page"))
     return render_template("reports.html")
 
 

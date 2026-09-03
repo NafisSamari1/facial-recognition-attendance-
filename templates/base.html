@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>{% block title %}Verascan{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#2f8c5e">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/verscan knust logo.png') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   </head>
   <body>
@@ -13,7 +16,7 @@
       {% if request.endpoint != 'login_page' %}
       <aside class="sidebar">
         <div class="brand">
-          <img class="brand-logo" src="{{ url_for('static', filename='images/knust-logo-png_seeklogo-618224.png') }}" alt="Verascan logo">
+          <img class="brand-logo" src="{{ url_for('static', filename='images/verscan knust logo.png') }}" alt="Verascan KNUST logo">
           <div class="brand-text">
             <span class="brand-name">Verascan</span>
             <span class="brand-sub">{% if session.get('role') == 'student' %}Student Portal{% else %}Face attendance{% endif %}</span>
@@ -198,6 +201,13 @@
     <div id="toast-root"></div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('{{ url_for('static', filename='service-worker.js') }}');
+        });
+      }
+    </script>
 
     {% block scripts %}{% endblock %}
   </body>

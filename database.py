@@ -110,6 +110,18 @@ def init_db():
         )
         """,
     )
+    for col, col_type in [
+        ("location_lat", "REAL"),
+        ("location_lng", "REAL"),
+        ("created_at", "TEXT"),
+    ]:
+        try:
+            if USE_POSTGRES:
+                _execute(conn, f"ALTER TABLE attendance ADD COLUMN IF NOT EXISTS {col} {col_type}")
+            else:
+                conn.execute(f"ALTER TABLE attendance ADD COLUMN {col} {col_type}")
+        except Exception:
+            pass
     _execute(
         conn,
         """

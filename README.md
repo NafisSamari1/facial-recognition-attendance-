@@ -128,3 +128,15 @@ python app.py
 ```
 
 Then visit **http://localhost:5000**.
+
+## Render deployment
+
+The repository includes `render.yaml` for deploying Verascan with a Render Web Service and Render PostgreSQL database.
+
+1. Push this project to a GitHub repository.
+2. In Render, choose **New > Blueprint** and select the repository.
+3. Set `APP_USERNAME` and `APP_PASSWORD` when Render prompts for secret values.
+4. Deploy the web service and database, then add `nafis.com` under the service's Custom Domains.
+5. Update the domain registrar's DNS records with the values Render provides.
+
+The deployed site must use HTTPS for phone camera and GPS access. Face samples and the trained model are stored under `data/`; configure a persistent Render disk or object storage before using the service with real students, because an ephemeral web-service filesystem can be replaced during deploys.
