@@ -302,7 +302,6 @@ def api_delete_course(course_name):
 
 @app.route("/api/students", methods=["POST"])
 def api_create_student():
- 
     payload = request.get_json(force=True)
     student_id = (payload.get("student_id") or "").strip()
     full_name = (payload.get("full_name") or "").strip()

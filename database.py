@@ -517,5 +517,3 @@ def get_student_summary(student_id):
         "today_status": dict(today_row)["status"] if today_row else "not_marked",
         "last_scan": f"{last_row['date']} {last_row['time']}" if last_row else "Never",
     }
-
-
