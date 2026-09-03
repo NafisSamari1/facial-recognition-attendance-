@@ -64,14 +64,14 @@
 
         {% if s.device_reset_requested %}
         <div class="hint-pill mt-8" style="background:rgba(225,194,129,0.15); color:var(--warn); border:1px solid var(--warn); padding:6px 10px; border-radius:6px;">
-          ⚠️ Reset Requested: {{ s.device_reset_reason or 'Phone changed/lost' }}
+          Reset Requested: {{ s.device_reset_reason or 'Phone changed/lost' }}
         </div>
         {% endif %}
 
         <div class="mt-8 flex-between">
           {% if s.device_id %}
             <button class="btn btn-ghost btn-sm" type="button" onclick="unbindDevice('{{ s.student_id }}', '{{ s.full_name }}')" style="font-size:0.75rem; padding:4px 8px; width:100%;">
-              🔓 Unbind / Reset Device
+              Unbind / Reset Device
             </button>
           {% else %}
             <span class="badge badge-warn" style="width:100%; text-align:center;">Awaiting 1st Device Login</span>

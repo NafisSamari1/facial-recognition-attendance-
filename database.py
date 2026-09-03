@@ -37,12 +37,21 @@ def init_db():
         """
     )
     # Safely migrate existing databases if columns are missing
-    for col, col_type in [("device_name", "TEXT"), ("device_reset_requested", "INTEGER DEFAULT 0"), ("device_reset_reason", "TEXT")]:
+    for col, col_type in [("email", "TEXT"), ("device_id", "TEXT"), ("device_name", "TEXT"), ("device_reset_requested", "INTEGER DEFAULT 0"), ("device_reset_reason", "TEXT")]:
         try:
             conn.execute(f"ALTER TABLE students ADD COLUMN {col} {col_type}")
         except sqlite3.OperationalError:
             pass
 
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS courses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS attendance (
@@ -99,11 +108,105 @@ def init_db():
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS app_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )
+        """
+    )
     conn.commit()
     conn.close()
 
 
+def get_app_setting(key, default=None):
+    conn = get_connection()
+    row = conn.execute("SELECT value FROM app_settings WHERE key = ?", (key,)).fetchone()
+    conn.close()
+    return row["value"] if row else default
+
+
+def set_app_setting(key, value):
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        (key, value),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_manager_credentials():
+    username = get_app_setting("manager_username", os.environ.get("APP_USERNAME", "admin"))
+    password = get_app_setting("manager_password", os.environ.get("APP_PASSWORD", "admin123"))
+    return username, password
+
+
+def set_manager_credentials(username, password):
+    username = (username or "").strip()
+    password = password or ""
+    if not username:
+        raise ValueError("Username cannot be empty.")
+    if not password:
+        raise ValueError("Password cannot be empty.")
+    set_app_setting("manager_username", username)
+    set_app_setting("manager_password", password)
+
+
+def add_course(course_name):
+    if not course_name or not course_name.strip():
+        return None
+    cleaned = course_name.strip()
+    conn = get_connection()
+    conn.execute(
+        "INSERT OR IGNORE INTO courses (name, created_at) VALUES (?, ?)",
+        (cleaned, datetime.utcnow().isoformat()),
+    )
+    conn.commit()
+    conn.close()
+    return cleaned
+
+
+def ensure_course(course_name):
+    if not course_name or not course_name.strip():
+        return None
+    return add_course(course_name)
+
+
+def list_courses():
+    conn = get_connection()
+    rows = conn.execute(
+        """
+        SELECT DISTINCT course FROM (
+            SELECT name AS course FROM courses
+            UNION ALL
+            SELECT course FROM students
+        )
+        ORDER BY course
+        """
+    ).fetchall()
+    conn.close()
+    return [row["course"] for row in rows if row["course"]]
+
+
+def delete_course(course_name):
+    if not course_name or not course_name.strip():
+        return False
+    cleaned = course_name.strip()
+    conn = get_connection()
+    in_use = conn.execute("SELECT COUNT(*) AS c FROM students WHERE course = ?", (cleaned,)).fetchone()["c"]
+    if in_use:
+        conn.close()
+        return False
+    conn.execute("DELETE FROM courses WHERE name = ?", (cleaned,))
+    conn.commit()
+    conn.close()
+    return True
+
+
 def add_student(student_id, full_name, course, email, device_id=None, device_name=None):
+    ensure_course(course)
     conn = get_connection()
     conn.execute(
         "INSERT INTO students (student_id, full_name, course, email, device_id, device_name, face_samples, created_at) VALUES (?, ?, ?, ?, ?, ?, 0, ?)",

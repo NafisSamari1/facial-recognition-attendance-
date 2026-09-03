@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Help Center{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="eyebrow">Student Support</div>
+  <h1 class="page-title">Verascan Attendance System</h1>
+  <p class="page-sub">Everything you need to know about how the student portal works, how attendance is marked, and what to do when you need help using the system.</p>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="section-title">How the app works</h3>
+      </div>
+    </div>
+    <p class="section-hint">Verascan is a face-based attendance system built for student check-ins. Instead of manual signatures or roll calls, students log in, verify their identity with a face scan, and the system records attendance only when they are in the allowed area zone.</p>
+    <div class="mt-16">
+      <div class="result-panel">
+        <div class="result-grid">
+          <div class="result-row">
+            <span class="result-label">Step 1</span>
+            <strong class="result-value">Sign in</strong>
+            <span class="text-mute">Use your Student ID and device credentials to access the student portal.</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">Step 2</span>
+            <strong class="result-value">Wait for session</strong>
+            <span class="text-mute">Your manager opens a class attendance session and sends a live signal.</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">Step 3</span>
+            <strong class="result-value">Verify your location</strong>
+            <span class="text-mute">Your device must be within the active area geofence set by the manager.</span>
+          </div>
+          <div class="result-row">
+            <span class="result-label">Step 4</span>
+            <strong class="result-value">Scan your face</strong>
+            <span class="text-mute">The app captures a live image and compares it to your registered biometric model.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="section-title">What the student portal includes</h3>
+      </div>
+    </div>
+    <ul class="text-mute" style="margin:0; padding-left:18px; line-height:1.9;">
+      <li>Student dashboard with your attendance status for the day.</li>
+      <li>Live session status and countdown timer for class attendance windows.</li>
+      <li>Attendance history and records for your courses.</li>
+      <li>Device security profile to confirm your account is linked to one device.</li>
+      <li>Face enrollment progress so your biometric data stays updated.</li>
+      <li>Area zone information telling you the permitted attendance location.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="grid grid-2 mt-24">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="section-title">How do I sign in to the app?</h3>
+      </div>
+    </div>
+    <ol class="text-mute" style="margin:0; padding-left:18px; line-height:1.9;">
+      <li>Open the Verascan app or web portal.</li>
+      <li>Go to the student login screen.</li>
+      <li>Enter your Student ID exactly as provided by your school or department.</li>
+      <li>Allow the browser to access your camera if prompted.</li>
+      <li>If this is your first login from a phone, the system may bind your account to that device automatically.</li>
+      <li>After successful login, you will be redirected to your dashboard.</li>
+    </ol>
+    <div class="hint-pill mt-16">Tip: If your account is already tied to another phone, you may need manager approval to reset or rebind the device.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="section-title">How do I mark attendance?</h3>
+      </div>
+    </div>
+    <ol class="text-mute" style="margin:0; padding-left:18px; line-height:1.9;">
+      <li>Check whether your manager has opened an attendance session.</li>
+      <li>Make sure your phone is within the live area zone boundary.</li>
+      <li>Open the Attendance page from the student portal.</li>
+      <li>Allow camera access so the system can capture your face.</li>
+      <li>Face the camera and wait for the scan to complete.</li>
+      <li>If the system recognises you and your location is permitted, attendance is marked successfully.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="grid grid-2 mt-24">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="section-title">How does the system know it's me?</h3>
+      </div>
+    </div>
+    <p class="text-mute">The app stores your face samples when you first register. These are used to train the recognition model. When a new attendance session starts, a live image is compared against your saved samples. If the match is strong enough and your location is valid, the system marks you present.</p>
+    <p class="text-mute mt-16">The system also checks the device used to log in, the area zone boundary, and the active time window so fake or remote attendance attempts are reduced.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="section-title">Why do I need to be in the allowed zone?</h3>
+      </div>
+    </div>
+    <p class="text-mute">The manager sets a geofence (area zone) for class attendance. If you are outside that zone, the system will not accept your attendance even if your face is successfully recognised. This helps keep attendance fair and location-aware.</p>
+    <p class="text-mute mt-16">You can see the current active zone in the dashboard and the student portal, including its radius and center location.</p>
+  </div>
+</div>
+
+<div class="grid grid-2 mt-24">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="section-title">What if I changed my phone?</h3>
+      </div>
+    </div>
+    <p class="text-mute">If you lost your device or switched to a new phone, you can request a device reset from the student portal. Your manager will review the request before the account is unbound from the previous device.</p>
+    <p class="text-mute mt-16">This protects the integrity of the attendance system and prevents unauthorized device sharing.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 class="section-title">Where can I see my attendance history?</h3>
+      </div>
+    </div>
+    <p class="text-mute">Open your student dashboard and use the My Attendance or Reports section to view attendance records, check history by date, and confirm whether you were marked present or absent for a session.</p>
+    <p class="text-mute mt-16">This record is useful for reviewing class participation and making sure your attendance has been properly logged.</p>
+  </div>
+</div>
+
+<div class="card mt-24">
+  <div class="card-header">
+    <div>
+      <h3 class="section-title">Troubleshooting guide</h3>
+    </div>
+  </div>
+  <div class="grid grid-2">
+    <div class="result-panel">
+      <div class="result-label">If the camera does not open</div>
+      <p class="text-mute mt-8">Make sure your browser has camera permission enabled. Then refresh the page and try again. If you are on a mobile device, check the browser settings and allow camera access.</p>
+    </div>
+    <div class="result-panel">
+      <div class="result-label">If attendance is not accepted</div>
+      <p class="text-mute mt-8">Verify that the attendance session is still active, you are within the correct geofence, and your face was captured clearly. Poor lighting or angled face capture can affect recognition.</p>
+    </div>
+    <div class="result-panel">
+      <div class="result-label">If you are not seeing the session</div>
+      <p class="text-mute mt-8">Your manager may not have opened an attendance window yet. You can still check the dashboard for session status and wait for an active attendance prompt.</p>
+    </div>
+    <div class="result-panel">
+      <div class="result-label">If your account is not found</div>
+      <p class="text-mute mt-8">Confirm that you entered the correct Student ID. If it still fails, contact your manager or school admin to confirm your registration.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-24">
+  <div class="card-header">
+    <div>
+      <h3 class="section-title">Support and security</h3>
+    </div>
+  </div>
+  <p class="text-mute">Verascan is designed to protect real attendance. Each student account is linked to a device, face recognition is used to validate identity, and location checks help prevent attendance abuse. If you need support or believe there is an issue with your account, contact your manager or the attendance administrator.</p>
+</div>
+{% endblock %}

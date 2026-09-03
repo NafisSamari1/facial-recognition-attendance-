@@ -23,8 +23,8 @@
   </div>
 
   <div id="geofence-status-bar" class="mt-12 flex-between" style="font-size:0.85rem; padding:10px 14px; border-radius:8px; background:rgba(255,255,255,0.05); flex-wrap:wrap; gap:8px;">
-    <span id="geofence-text">📍 GPS Check: Click "Refresh GPS" to verify your location inside the zone</span>
-    <button class="btn btn-ghost btn-sm" id="refresh-gps-banner-btn" type="button" style="padding:4px 10px; font-size:0.8rem;">🔄 Refresh GPS & Recheck Zone</button>
+    <span id="geofence-text">GPS Check: Click "Refresh GPS" to verify your location inside the zone</span>
+    <button class="btn btn-ghost btn-sm" id="refresh-gps-banner-btn" type="button" style="padding:4px 10px; font-size:0.8rem;">Refresh GPS & Recheck Zone</button>
   </div>
 </div>
 
@@ -40,7 +40,7 @@
     <video id="video" autoplay playsinline muted style="width:100%;border-radius:12px;background:#0f1720;"></video>
     <div class="flex-between mt-16">
       <button class="btn btn-primary" id="scan-btn" type="button">Scan now</button>
-      <button class="btn btn-ghost" id="locate-btn" type="button">🔄 Refresh GPS Location</button>
+      <button class="btn btn-ghost" id="locate-btn" type="button">Refresh GPS Location</button>
     </div>
   </div>
 
@@ -158,9 +158,9 @@ function renderResult(result) {
   
   let lockReason = '';
   if (!isSessionOpen) {
-    lockReason = '<div style="color:#e74c3c; font-size:0.85rem; margin-top:8px;">⚠️ Attendance session is closed. Waiting for manager signal.</div>';
+    lockReason = '<div style="color:#e74c3c; font-size:0.85rem; margin-top:8px;">Attendance session is closed. Waiting for manager signal.</div>';
   } else if (!isZoneValid) {
-    lockReason = '<div style="color:#e74c3c; font-size:0.85rem; margin-top:8px;">⚠️ You are outside the attendance zone. Move into the area and click "Refresh GPS".</div>';
+    lockReason = '<div style="color:#e74c3c; font-size:0.85rem; margin-top:8px;">You are outside the attendance zone. Move into the area and click "Refresh GPS".</div>';
   }
 
   panel.innerHTML = `
@@ -237,7 +237,7 @@ function getLocation() {
       }
     } catch (e) {
       isZoneValid = true;
-      if (text) text.textContent = `📍 Location Captured: Lat ${pos.coords.latitude.toFixed(4)}, Lng ${pos.coords.longitude.toFixed(4)}`;
+      if (text) text.textContent = `Location Captured: Lat ${pos.coords.latitude.toFixed(4)}, Lng ${pos.coords.longitude.toFixed(4)}`;
     }
 
     if (currentResult) renderResult(currentResult);

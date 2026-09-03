@@ -22,13 +22,12 @@
         <nav class="nav">
           <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' else '' }}" href="/">Dashboard</a>
           {% if session.get('role') == 'manager' %}
-            <a class="nav-link {{ 'active' if request.endpoint == 'zone_page' else '' }}" href="/zone-setup">📍 Area Zone</a>
             <a class="nav-link {{ 'active' if request.endpoint == 'register_page' else '' }}" href="/register">Register</a>
-          {% endif %}
-          <a class="nav-link {{ 'active' if request.endpoint == 'attendance_page' else '' }}" href="/attendance">Attendance</a>
-          <a class="nav-link {{ 'active' if request.endpoint == 'reports_page' else '' }}" href="/reports">{% if session.get('role') == 'student' %}My Reports{% else %}Reports{% endif %}</a>
-          {% if session.get('role') == 'manager' %}
-            <a class="nav-link {{ 'active' if request.endpoint == 'students_page' else '' }}" href="/students">Students</a>
+            <a class="nav-link {{ 'active' if request.endpoint == 'reports_page' else '' }}" href="/reports">Reports</a>
+          {% elif session.get('role') == 'student' %}
+            <a class="nav-link {{ 'active' if request.endpoint == 'attendance_page' else '' }}" href="/attendance">Attendance</a>
+            <a class="nav-link {{ 'active' if request.endpoint == 'discover_page' else '' }}" href="/discover">Discover</a>
+            <a class="nav-link {{ 'active' if request.endpoint == 'reports_page' else '' }}" href="/reports">My Reports</a>
           {% endif %}
         </nav>
 
@@ -42,8 +41,8 @@
             {% endif %}
           </div>
           <div class="sidebar-actions">
-            <button class="icon-button" type="button" data-settings-trigger>⚙ Settings</button>
-            <a class="btn btn-ghost btn-sm" href="{{ url_for('logout') }}">↩ Logout</a>
+            <button class="icon-button" type="button" data-settings-trigger>Settings</button>
+            <a class="btn btn-ghost btn-sm" href="{{ url_for('logout') }}">Logout</a>
           </div>
           <p class="foot-note">Webcam-based student attendance with a local recognition workflow.</p>
         </div>
@@ -54,24 +53,17 @@
         {% if request.endpoint != 'login_page' %}
         <header class="top-bar">
           <div>
-            <div class="eyebrow">
-              {% if session.get('role') == 'student' %}
-                Student Portal • {{ session.get('course', 'Enrolled') }}
-              {% else %}
-                Attendance Studio • Manager Control
-              {% endif %}
-            </div>
-            <h1 class="page-title compact">
-              {% if session.get('role') == 'student' %}
-                Welcome, {{ session.get('full_name', 'Student') }}
-              {% else %}
-                Everything in one place
-              {% endif %}
-            </h1>
+            {% if session.get('role') == 'student' %}
+              <div class="eyebrow">Student Portal — {{ session.get('course', 'Enrolled') }}</div>
+              <h1 class="page-title compact">Welcome, {{ session.get('full_name', 'Student') }}</h1>
+            {% else %}
+              <div class="eyebrow">Attendance Management</div>
+              <h1 class="page-title compact">Dashboard</h1>
+            {% endif %}
           </div>
           <div class="top-bar-actions">
-            <button class="icon-button" type="button" data-settings-trigger>⚙ Settings</button>
-            <a class="icon-button secondary" href="{{ url_for('logout') }}">↩ Logout</a>
+            <button class="icon-button" type="button" data-settings-trigger>Settings</button>
+            <a class="icon-button secondary" href="{{ url_for('logout') }}">Logout</a>
           </div>
         </header>
         {% endif %}
@@ -93,30 +85,112 @@
       <div class="settings-panel__card">
         <div class="settings-panel__head">
           <div>
-            <div class="eyebrow">Preferences</div>
-            <h3 class="section-title">Display settings</h3>
+            <div class="eyebrow">Navigation</div>
+            <h3 class="section-title">Portal quick links</h3>
           </div>
           <button class="icon-button ghost" type="button" id="settings-close">✕</button>
         </div>
         <div class="settings-panel__body">
-          <button class="settings-option" id="theme-toggle-panel" type="button">🌙 Toggle dark/light mode</button>
-          <a class="settings-option" href="{{ url_for('logout') }}">↩ Sign out</a>
+          <div class="settings-section">
+            <div class="settings-section__label">Navigation</div>
+            {% if session.get('role') == 'student' %}
+              <a class="settings-option" href="{{ url_for('dashboard') }}">
+                <span>Dashboard</span>
+                <span>→</span>
+              </a>
+              <a class="settings-option" href="{{ url_for('attendance_page') }}">
+                <span>Attendance</span>
+                <span>→</span>
+              </a>
+              <a class="settings-option" href="{{ url_for('discover_page') }}">
+                <span>Discover</span>
+                <span>→</span>
+              </a>
+              <a class="settings-option" href="{{ url_for('reports_page') }}">
+                <span>My Attendance</span>
+                <span>→</span>
+              </a>
+            {% else %}
+              <a class="settings-option" href="{{ url_for('dashboard') }}">
+                <span>Dashboard</span>
+                <span>→</span>
+              </a>
+              <a class="settings-option" href="{{ url_for('register_page') }}">
+                <span>Register</span>
+                <span>→</span>
+              </a>
+              <a class="settings-option" href="{{ url_for('reports_page') }}">
+                <span>Reports</span>
+                <span>→</span>
+              </a>
+            {% endif %}
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section__label">Appearance</div>
+            <button class="settings-option {{ 'selected' if (session.get('theme') or 'system') == 'dark' else '' }}" data-theme-option="dark" type="button">
+              <span>Dark mode</span>
+              <span class="theme-option-indicator">●</span>
+            </button>
+            <button class="settings-option {{ 'selected' if (session.get('theme') or 'system') == 'system' else '' }}" data-theme-option="system" type="button">
+              <span>System mode</span>
+              <span class="theme-option-indicator">●</span>
+            </button>
+            <button class="settings-option {{ 'selected' if (session.get('theme') or 'system') == 'light' else '' }}" data-theme-option="light" type="button">
+              <span>Light mode</span>
+              <span class="theme-option-indicator">●</span>
+            </button>
+          </div>
+
+          {% if session.get('role') == 'manager' %}
+          <div class="settings-section">
+            <div class="settings-section__label">Account</div>
+            <form class="settings-form" action="{{ url_for('update_manager_account') }}" method="post">
+              <div class="field">
+                <label for="settings-manager-username">Username</label>
+                <input id="settings-manager-username" name="username" type="text" value="{{ session.get('username', 'admin') }}" required>
+              </div>
+              <div class="field">
+                <label for="settings-current-password">Current password</label>
+                <input id="settings-current-password" name="current_password" type="password" placeholder="Current password" required>
+              </div>
+              <div class="field">
+                <label for="settings-new-password">New password</label>
+                <input id="settings-new-password" name="new_password" type="password" placeholder="New password" required>
+              </div>
+              <div class="field">
+                <label for="settings-confirm-password">Confirm password</label>
+                <input id="settings-confirm-password" name="confirm_password" type="password" placeholder="Confirm new password" required>
+              </div>
+              <button class="btn btn-primary btn-block" type="submit">Update account</button>
+            </form>
+          </div>
+          {% endif %}
+
+          <div class="settings-section">
+            <div class="settings-section__label">Support</div>
+            <a class="settings-option" href="{{ url_for('help_center_page') }}">
+              <span>Help Center</span>
+              <span>→</span>
+            </a>
+          </div>
+
+          <a class="settings-option" href="{{ url_for('logout') }}">Sign out</a>
         </div>
       </div>
     </div>
 
     <nav class="mobile-nav" aria-label="Mobile navigation">
-      <a class="mobile-nav-link {{ 'active' if request.endpoint == 'dashboard' else '' }}" href="/">⌂<span>Home</span></a>
+      <a class="mobile-nav-link {{ 'active' if request.endpoint == 'dashboard' else '' }}" href="/"><span>Home</span></a>
       {% if session.get('role') == 'manager' %}
-        <a class="mobile-nav-link {{ 'active' if request.endpoint == 'zone_page' else '' }}" href="/zone-setup">📍<span>Zone</span></a>
-        <a class="mobile-nav-link {{ 'active' if request.endpoint == 'register_page' else '' }}" href="/register">✚<span>Register</span></a>
+        <a class="mobile-nav-link {{ 'active' if request.endpoint == 'register_page' else '' }}" href="/register"><span>Register</span></a>
+        <a class="mobile-nav-link {{ 'active' if request.endpoint == 'reports_page' else '' }}" href="/reports"><span>Reports</span></a>
+      {% elif session.get('role') == 'student' %}
+        <a class="mobile-nav-link {{ 'active' if request.endpoint == 'attendance_page' else '' }}" href="/attendance"><span>Attendance</span></a>
+        <a class="mobile-nav-link {{ 'active' if request.endpoint == 'discover_page' else '' }}" href="/discover"><span>Discover</span></a>
+        <a class="mobile-nav-link {{ 'active' if request.endpoint == 'reports_page' else '' }}" href="/reports"><span>My Reports</span></a>
       {% endif %}
-      <a class="mobile-nav-link {{ 'active' if request.endpoint == 'attendance_page' else '' }}" href="/attendance">◎<span>Scan</span></a>
-      {% if session.get('role') == 'manager' %}
-        <a class="mobile-nav-link {{ 'active' if request.endpoint == 'students_page' else '' }}" href="/students">👥<span>Students</span></a>
-      {% endif %}
-      <a class="mobile-nav-link {{ 'active' if request.endpoint == 'reports_page' else '' }}" href="/reports">📊<span>Reports</span></a>
-      <button class="mobile-nav-link" type="button" data-settings-trigger>⚙<span>Settings</span></button>
+      <button class="mobile-nav-link" type="button" data-settings-trigger><span>Settings</span></button>
     </nav>
 
 

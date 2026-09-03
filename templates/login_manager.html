@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Manager Login - Verascan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body>
+    <div class="login-shell">
+      <div class="login-card">
+        <div class="login-hero">
+          <div class="login-pill">Staff Portal</div>
+          <div class="login-brandrow">
+            <img class="brand-logo login-logo" src="{{ url_for('static', filename='images/knust-logo-png_seeklogo-618224.png') }}" alt="Verascan logo">
+            <div>
+              <div class="eyebrow">Identity & Attendance</div>
+              <h1 class="page-title login-title">Manager Login</h1>
+            </div>
+          </div>
+          <p class="page-sub" style="margin-top: 16px;">Enter your staff credentials to access the attendance dashboard, zone controls, and student management.</p>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="card mt-16">
+              {% for message in messages %}
+                <div class="hint-pill">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <form method="post" class="login-form mt-16">
+          <div class="field mb-12">
+            <label for="username">Manager Username</label>
+            <input id="username" name="username" placeholder="admin" required>
+          </div>
+          <div class="field mb-12">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" placeholder="admin123" required>
+          </div>
+          <button class="btn btn-primary btn-block mt-16" type="submit">Sign in as Manager</button>
+        </form>
+        
+      </div>
+    </div>
+  </body>
+</html>

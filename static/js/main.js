@@ -49,29 +49,69 @@ function getDeviceName() {
 
 function getSavedTheme() {
   const stored = localStorage.getItem(THEME_KEY);
-  if (stored === 'dark' || stored === 'light') return stored;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  if (stored === 'dark' || stored === 'light' || stored === 'system') return stored;
+  return 'system';
+}
+
+function getEffectiveTheme(theme = getSavedTheme()) {
+  if (theme === 'system') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return theme;
+}
+
+function syncThemeButtons() {
+  const selectedTheme = getSavedTheme();
+  document.querySelectorAll('[data-theme-option]').forEach((btn) => {
+    const option = btn.getAttribute('data-theme-option');
+    const isSelected = option === selectedTheme;
+    btn.classList.toggle('selected', isSelected);
+    btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+    const indicator = btn.querySelector('.theme-option-indicator');
+    if (indicator) indicator.textContent = isSelected ? '●' : '○';
+  });
 }
 
 function applyTheme(theme) {
-  document.documentElement.dataset.theme = theme;
+  const normalizedTheme = theme === 'system' ? getEffectiveTheme(theme) : theme;
+  document.documentElement.dataset.theme = normalizedTheme;
   localStorage.setItem(THEME_KEY, theme);
+  syncThemeButtons();
+
   const btn = document.getElementById('theme-toggle');
   const mobileBtn = document.getElementById('theme-toggle-mobile');
-  const label = theme === 'dark' ? 'Light mode' : 'Dark mode';
+  const label = normalizedTheme === 'dark' ? 'Light mode' : 'Dark mode';
   if (btn) btn.textContent = label;
   if (mobileBtn) mobileBtn.textContent = label;
 }
 
 function toggleTheme() {
-  const current = document.documentElement.dataset.theme || getSavedTheme();
-  applyTheme(current === 'dark' ? 'light' : 'dark');
+  const current = getSavedTheme();
+  const actual = getEffectiveTheme(current);
+  applyTheme(actual === 'dark' ? 'light' : 'dark');
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  const systemMedia = window.matchMedia('(prefers-color-scheme: dark)');
+  const syncSystemTheme = () => {
+    if (getSavedTheme() === 'system') {
+      applyTheme('system');
+    }
+  };
+  if (systemMedia.addEventListener) {
+    systemMedia.addEventListener('change', syncSystemTheme);
+  } else if (systemMedia.addListener) {
+    systemMedia.addListener(syncSystemTheme);
+  }
+
   applyTheme(getSavedTheme());
   const themeButtons = document.querySelectorAll('[data-theme-toggle], #theme-toggle-panel');
   themeButtons.forEach((btn) => btn.addEventListener('click', toggleTheme));
+  document.querySelectorAll('[data-theme-option]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      applyTheme(btn.getAttribute('data-theme-option'));
+    });
+  });
 
   const settingsPanel = document.getElementById('settings-panel');
   const settingsTriggers = document.querySelectorAll('[data-settings-trigger]');

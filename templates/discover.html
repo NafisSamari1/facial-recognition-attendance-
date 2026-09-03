@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Discover{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="eyebrow">Location check</div>
+  <h1 class="page-title">Discover</h1>
+  <p class="page-sub">See the attendance area set by your manager and compare it with your current GPS position before scanning your attendance.</p>
+</div>
+
+<div class="discover-layout">
+  <div class="card discover-map-card">
+    <div class="card-header">
+      <div>
+        <h3 class="section-title">Attendance zone map</h3>
+        <p class="section-hint">The green circle shows the manager-assigned attendance boundary.</p>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="refresh-discover-location" type="button">Refresh GPS</button>
+    </div>
+    <div id="discover-map" class="mt-16"></div>
+    <div class="mt-16">
+      <div id="discover-status" class="discover-status">Checking active attendance zone…</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let discoverMap = null;
+  let zoneMarker = null;
+  let userMarker = null;
+  let zoneData = null;
+
+  function haversineMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const phi1 = (lat1 * Math.PI) / 180;
+    const phi2 = (lat2 * Math.PI) / 180;
+    const dPhi = ((lat2 - lat1) * Math.PI) / 180;
+    const dLambda = ((lon2 - lon1) * Math.PI) / 180;
+    const a = Math.sin(dPhi / 2) * Math.sin(dPhi / 2) + Math.cos(phi1) * Math.cos(phi2) * Math.sin(dLambda / 2) * Math.sin(dLambda / 2);
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  }
+
+  function updateStatus(message, tone = 'default') {
+    const status = document.getElementById('discover-status');
+    if (!status) return;
+    status.textContent = message;
+    status.className = 'discover-status';
+    if (tone === 'warn') status.classList.add('warn');
+    if (tone === 'danger') status.classList.add('danger');
+  }
+
+  function ensureMap() {
+    if (discoverMap) return;
+    discoverMap = L.map('discover-map').setView([0, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(discoverMap);
+  }
+
+  function renderZone() {
+    if (!discoverMap) return;
+
+    if (zoneMarker) {
+      discoverMap.removeLayer(zoneMarker);
+      zoneMarker = null;
+    }
+
+    if (!zoneData || zoneData.lat == null || zoneData.lng == null) {
+      updateStatus('No attendance zone is active right now. Ask your manager to set one.', 'warn');
+      return;
+    }
+
+    const zoneLatLng = [Number(zoneData.lat), Number(zoneData.lng)];
+    const radius = Number(zoneData.radius_meters || 100);
+    zoneMarker = L.circle(zoneLatLng, {
+      radius: radius,
+      color: '#2f8c5e',
+      fillColor: '#2f8c5e',
+      fillOpacity: 0.2,
+      weight: 2
+    }).addTo(discoverMap);
+
+    const label = zoneData.name || 'Attendance Area';
+    zoneMarker.bindPopup(`<strong>${label}</strong><br>Allowed radius: ${radius}m`);
+
+    const bounds = L.latLngBounds([zoneLatLng]);
+    if (userMarker) {
+      bounds.extend(userMarker.getLatLng());
+    }
+    discoverMap.fitBounds(bounds.pad(0.35));
+  }
+
+  function updateUserMarker(lat, lng) {
+    if (!discoverMap) return;
+
+    const latLng = [lat, lng];
+    if (userMarker) {
+      userMarker.setLatLng(latLng);
+    } else {
+      userMarker = L.marker(latLng, {
+        title: 'Your location'
+      }).addTo(discoverMap);
+      userMarker.bindPopup('Your current location');
+    }
+
+    if (zoneData && zoneData.lat != null && zoneData.lng != null) {
+      const distance = haversineMeters(lat, lng, Number(zoneData.lat), Number(zoneData.lng));
+      const radius = Number(zoneData.radius_meters || 100);
+      const inside = distance <= radius;
+      const zoneName = zoneData.name || 'attendance area';
+
+      if (inside) {
+        updateStatus(`You are ${distance.toFixed(0)}m away from ${zoneName}. You are inside the allowed attendance area.`, 'default');
+      } else {
+        updateStatus(`You are ${distance.toFixed(0)}m away from ${zoneName}. Move into the geofenced area to mark attendance.`, 'warn');
+      }
+
+      const bounds = L.latLngBounds([latLng, [Number(zoneData.lat), Number(zoneData.lng)]]);
+      discoverMap.fitBounds(bounds.pad(0.35));
+    }
+  }
+
+  async function loadZone() {
+    try {
+      const response = await fetch('/api/zone');
+      const data = await response.json();
+      zoneData = data.zone || null;
+      renderZone();
+    } catch (error) {
+      zoneData = null;
+      renderZone();
+      updateStatus('Unable to load the attendance zone right now.', 'danger');
+    }
+  }
+
+  function requestLocation() {
+    if (!navigator.geolocation) {
+      updateStatus('Geolocation is not supported on this device.', 'danger');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition((position) => {
+      updateUserMarker(position.coords.latitude, position.coords.longitude);
+    }, (error) => {
+      const message = error && error.message ? error.message : 'Location access denied';
+      updateStatus(`GPS location could not be loaded: ${message}`, 'danger');
+    }, {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 10000
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    ensureMap();
+    loadZone();
+    requestLocation();
+    document.getElementById('refresh-discover-location').addEventListener('click', () => {
+      requestLocation();
+    });
+  });
+</script>
+{% endblock %}

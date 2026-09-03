@@ -12,8 +12,8 @@
         <h1 class="hero-title">Welcome, {{ session.get('full_name') }}</h1>
         <p class="hero-sub">Student ID: <strong>{{ session.get('student_id') }}</strong> • Course: <strong>{{ session.get('course') }}</strong></p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="/attendance">📷 Scan & Mark Attendance</a>
-          <a class="btn btn-ghost" href="/reports">📜 My Attendance History</a>
+          <a class="btn btn-primary" href="/attendance">Scan & Mark Attendance</a>
+          <a class="btn btn-ghost" href="/reports">My Attendance History</a>
         </div>
       </div>
       <div class="hero-glow-card">
@@ -30,7 +30,7 @@
     <div class="card mb-24" id="student-face-enrollment-card" style="background: rgba(225, 194, 129, 0.12); border: 1.5px solid var(--warn, #b38c3a); border-left: 5px solid var(--warn, #b38c3a);">
       <div class="flex-between" style="flex-wrap:wrap; gap:16px;">
         <div>
-          <div class="eyebrow" style="color:var(--warn, #b38c3a);">⚠️ BIOMETRIC REGISTRATION INCOMPLETE</div>
+          <div class="eyebrow" style="color:var(--warn, #b38c3a);">BIOMETRIC REGISTRATION INCOMPLETE</div>
           <h3 class="section-title" style="margin-top:2px;">Scan Your Face to Complete Registration</h3>
           <p class="section-hint" style="color:var(--text); font-size:0.95rem;">
             You have saved <strong id="stu-sample-count-disp">{{ student_summary.student.face_samples }} / 5</strong> required face samples. Scan your face now so the recognition system can mark your attendance.
@@ -38,7 +38,7 @@
         </div>
         <div>
           <button class="btn btn-primary" id="open-face-enroll-btn" type="button" style="padding:12px 20px; font-weight:700;">
-            📸 Scan Face & Complete Registration
+            Scan Face & Complete Registration
           </button>
         </div>
       </div>
@@ -64,15 +64,15 @@
         </div>
 
         <div class="sample-grid mt-16" id="stu-sample-slots" style="display:flex; justify-content:center; gap:8px;">
-          <div class="sample-slot {% if student_summary.student.face_samples >= 1 %}filled{% endif %}" data-slot="0">{% if student_summary.student.face_samples >= 1 %}✓{% else %}1{% endif %}</div>
-          <div class="sample-slot {% if student_summary.student.face_samples >= 2 %}filled{% endif %}" data-slot="1">{% if student_summary.student.face_samples >= 2 %}✓{% else %}2{% endif %}</div>
-          <div class="sample-slot {% if student_summary.student.face_samples >= 3 %}filled{% endif %}" data-slot="2">{% if student_summary.student.face_samples >= 3 %}✓{% else %}3{% endif %}</div>
-          <div class="sample-slot {% if student_summary.student.face_samples >= 4 %}filled{% endif %}" data-slot="3">{% if student_summary.student.face_samples >= 4 %}✓{% else %}4{% endif %}</div>
-          <div class="sample-slot {% if student_summary.student.face_samples >= 5 %}filled{% endif %}" data-slot="4">{% if student_summary.student.face_samples >= 5 %}✓{% else %}5{% endif %}</div>
+          <div class="sample-slot {% if student_summary.student.face_samples >= 1 %}filled{% endif %}" data-slot="0">{% if student_summary.student.face_samples >= 1 %}{% else %}1{% endif %}</div>
+          <div class="sample-slot {% if student_summary.student.face_samples >= 2 %}filled{% endif %}" data-slot="1">{% if student_summary.student.face_samples >= 2 %}{% else %}2{% endif %}</div>
+          <div class="sample-slot {% if student_summary.student.face_samples >= 3 %}filled{% endif %}" data-slot="2">{% if student_summary.student.face_samples >= 3 %}{% else %}3{% endif %}</div>
+          <div class="sample-slot {% if student_summary.student.face_samples >= 4 %}filled{% endif %}" data-slot="3">{% if student_summary.student.face_samples >= 4 %}{% else %}4{% endif %}</div>
+          <div class="sample-slot {% if student_summary.student.face_samples >= 5 %}filled{% endif %}" data-slot="4">{% if student_summary.student.face_samples >= 5 %}{% else %}5{% endif %}</div>
         </div>
 
         <div class="camera-controls mt-16 flex-between gap-12" style="max-width:480px; margin:16px auto 0;">
-          <button class="btn btn-primary flex-1" id="stu-capture-btn" type="button">📸 Capture Frame</button>
+          <button class="btn btn-primary flex-1" id="stu-capture-btn" type="button">Capture Frame</button>
           <button class="btn btn-ghost" id="stu-close-camera-btn" type="button">✕ Close Camera</button>
         </div>
       </div>
@@ -93,7 +93,7 @@
         </div>
       </div>
       <div class="mt-16" id="stu-scan-now-wrap" style="display:none;">
-        <a class="btn btn-primary btn-block" href="/attendance">🚀 Click Here to Scan & Mark Attendance Now</a>
+        <a class="btn btn-primary btn-block" href="/attendance">Click Here to Scan & Mark Attendance Now</a>
       </div>
     </div>
 
@@ -122,7 +122,7 @@
     <div class="card mt-24">
       <div class="card-header">
         <div>
-          <h3 class="section-title">📍 Attendance Area Zone</h3>
+          <h3 class="section-title">Attendance Area Zone</h3>
           <p class="section-hint">Allowed GPS location boundary set by your manager for taking attendance.</p>
         </div>
         <span class="status-chip" id="stu-zone-chip"><span class="dot"></span>Geofence Info</span>
@@ -135,7 +135,7 @@
     <div class="card mt-24">
       <div class="card-header">
         <div>
-          <h3 class="section-title">📱 Registered Device Security Profile</h3>
+          <h3 class="section-title">Registered Device Security Profile</h3>
           <p class="section-hint">Each student account is bound 1:1 to a single device for attendance integrity.</p>
         </div>
         <span class="status-chip">
@@ -168,7 +168,7 @@
         <div style="text-align:right;">
           {% if student_summary and student_summary.student and student_summary.student.device_reset_requested %}
             <div class="hint-pill" style="background:rgba(225,194,129,0.15); color:var(--warn); border:1px solid var(--warn); display:inline-block;">
-              ⏳ Device reset request pending manager approval.
+              Device reset request pending manager approval.
             </div>
           {% else %}
             <button class="btn btn-ghost btn-sm" id="btn-request-device-reset" type="button">
@@ -179,236 +179,173 @@
       </div>
     </div>
   </div>
-</div>
 
+</div>
 
 {% else %}
 <!-- ========================================================= MANAGER DASHBOARD -->
+
 <div class="dashboard-shell">
   <div class="dashboard-main">
-    <div class="hero-panel">
-      <div class="hero-copy">
-        <div class="eyebrow">Attendance intelligence</div>
-        <h1 class="hero-title">A premium control center for every scan.</h1>
-        <p class="hero-sub">Track recognition confidence, attendance flow, and student activity in one calm, modern workspace.</p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="/attendance">Open scanner</a>
-          <a class="btn btn-ghost" href="/reports">View reports</a>
-        </div>
-      </div>
-      <div class="hero-glow-card">
-        <div class="pulse-dot"></div>
-        <div class="mini-chart">
-          <div class="bar bar-1"></div>
-          <div class="bar bar-2"></div>
-          <div class="bar bar-3"></div>
-          <div class="bar bar-4"></div>
-        </div>
-        <div class="hero-metric">
-          <span>Today’s attendance</span>
-          <strong id="hero-today">–</strong>
-        </div>
-      </div>
-    </div>
 
-    <div class="grid grid-4" id="stat-cards">
-      <div class="card stat-card glow-card">
-        <span class="stat-label">Registered students</span>
+    <div class="grid grid-4" id="stat-cards" style="margin-bottom:24px;">
+      <div class="card stat-card">
+        <span class="stat-label">Registered Students</span>
         <div class="stat-value" id="stat-students">–</div>
       </div>
-      <div class="card stat-card glow-card accent">
-        <span class="stat-label">Present today</span>
+      <div class="card stat-card accent">
+        <span class="stat-label">Present Today</span>
         <div class="stat-value" id="stat-today">–</div>
         <span class="stat-delta" id="stat-rate"></span>
       </div>
-      <div class="card stat-card glow-card">
-        <span class="stat-label">Avg. confidence</span>
+      <div class="card stat-card">
+        <span class="stat-label">Avg. Scan Confidence</span>
         <div class="stat-value" id="stat-conf">–<small>%</small></div>
       </div>
-      <div class="card stat-card glow-card warn">
-        <span class="stat-label">Flagged scans</span>
+      <div class="card stat-card warn">
+        <span class="stat-label">Flagged Scans</span>
         <div class="stat-value" id="stat-flagged">–</div>
         <span class="stat-delta warn" id="stat-rejected"></span>
       </div>
     </div>
 
-    <div class="grid grid-2 mt-24">
-      <div class="card chart-card">
-        <div class="card-header">
+    <div class="card mb-24">
+      <div class="card-header">
+        <div>
+          <h3 class="section-title">Broadcast Attendance Session</h3>
+          <p class="section-hint">Open an attendance window for students to scan in</p>
+        </div>
+        <span class="status-chip" id="signal-chip"><span class="dot"></span>Session Status</span>
+      </div>
+
+      <div id="active-session-banner" class="hint-pill mb-16" style="display:none; background: rgba(47,140,94,0.15); border: 1px solid var(--accent); color: var(--accent); padding: 12px 16px; border-radius: 10px;">
+        <div class="flex-between">
           <div>
-            <h3 class="section-title">📡 Attendance Signal Broadcast</h3>
-            <p class="section-hint">Trigger an active attendance prompt & time window for students</p>
+            <strong id="session-title-disp">Session</strong>
+            <div style="font-size:0.85rem; opacity:0.9; margin-top:2px;">Window closes in: <span id="session-timer-disp" style="font-weight:700; font-family:monospace;">00:00</span></div>
           </div>
-          <span class="status-chip" id="signal-chip"><span class="dot"></span>Session Status</span>
+          <button class="btn btn-ghost btn-sm" id="end-session-btn" type="button">Stop Session</button>
         </div>
+      </div>
 
-        <div id="active-session-banner" class="hint-pill mb-16" style="display:none; background: rgba(47,140,94,0.15); border: 1px solid var(--accent); color: var(--accent); padding: 12px 16px; border-radius: 10px;">
-          <div class="flex-between">
-            <div>
-              <strong id="session-title-disp">CS101 Session</strong>
-              <div style="font-size:0.85rem; opacity:0.9; margin-top:2px;">Window closes in: <span id="session-timer-disp" style="font-weight:700; font-family:monospace;">00:00</span></div>
-            </div>
-            <button class="btn btn-ghost btn-sm" id="end-session-btn" type="button">Stop Signal</button>
-          </div>
-        </div>
-
-        <form id="session-form">
-          <div class="field mb-12">
+      <form id="session-form">
+        <div class="grid grid-3 gap-12">
+          <div class="field">
             <label for="session-course" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Target Course / Group</label>
-            <select id="session-course" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:var(--bg-card, #1a232f); color:var(--text, #fff);">
-              <option value="ALL">ALL Courses & Classes</option>
+            <select id="session-course" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
+              <option value="ALL">All Courses</option>
               <option value="BSc Computer Science">BSc Computer Science</option>
               <option value="BSc Electrical Engineering">BSc Electrical Engineering</option>
               <option value="BSc Business Administration">BSc Business Administration</option>
             </select>
           </div>
-          <div class="grid grid-2 gap-12 mt-12">
-            <div class="field">
-              <label for="session-duration" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Time Window</label>
-              <select id="session-duration" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:var(--bg-card, #1a232f); color:var(--text, #fff);">
-                <option value="5">5 Minutes (Quick Scan)</option>
-                <option value="15" selected>15 Minutes (Standard)</option>
-                <option value="30">30 Minutes (Lecture)</option>
-                <option value="60">60 Minutes (1 Hour)</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="session-name" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Window Title</label>
-              <input id="session-name" placeholder="e.g. Morning Roll Call" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:var(--bg-card, #1a232f); color:var(--text, #fff);">
-            </div>
+          <div class="field">
+            <label for="session-duration" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Time Window</label>
+            <select id="session-duration" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
+              <option value="5">5 Minutes</option>
+              <option value="15" selected>15 Minutes</option>
+              <option value="30">30 Minutes</option>
+              <option value="60">60 Minutes</option>
+            </select>
           </div>
-          <div class="mt-16">
-            <button class="btn btn-primary" type="submit" style="width:100%;">📡 Broadcast Attendance Signal</button>
+          <div class="field">
+            <label for="session-name" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Session Title</label>
+            <input id="session-name" placeholder="e.g. Morning Roll Call" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
           </div>
-        </form>
-      </div>
-
-      <div class="card chart-card">
-        <div class="card-header">
-          <div>
-            <h3 class="section-title">📍 Attendance Area Zone</h3>
-            <p class="section-hint">Set the physical GPS boundary where scans are permitted</p>
-          </div>
-          <span class="status-chip" id="zone-chip"><span class="dot"></span>Geofence</span>
         </div>
-
-        <form id="zone-form">
-          <div class="field mb-12">
-            <label for="zone-name" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Zone Name</label>
-            <input id="zone-name" placeholder="e.g. Main Science Auditorium" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:var(--bg-card, #1a232f); color:var(--text, #fff);">
-          </div>
-
-          <div class="grid grid-2 gap-12">
-            <div class="field">
-              <label for="zone-lat" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Center Latitude</label>
-              <input id="zone-lat" type="number" step="0.000001" placeholder="6.6731" required style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:var(--bg-card, #1a232f); color:var(--text, #fff);">
-            </div>
-            <div class="field">
-              <label for="zone-lng" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Center Longitude</label>
-              <input id="zone-lng" type="number" step="0.000001" placeholder="-1.5670" required style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:var(--bg-card, #1a232f); color:var(--text, #fff);">
-            </div>
-          </div>
-
-          <div class="field mt-12">
-            <div class="flex-between mb-4">
-              <label for="zone-radius" style="font-size:0.85rem; font-weight:600;">Allowed Radius Boundary</label>
-              <span id="radius-disp" class="mono" style="color:var(--accent); font-weight:700;">100 meters</span>
-            </div>
-            <input id="zone-radius" type="range" min="10" max="2000" step="10" value="100" style="width:100%;" oninput="document.getElementById('radius-disp').textContent = this.value + ' meters'">
-          </div>
-
-          <div class="flex-between mt-16 gap-12">
-            <button class="btn btn-ghost btn-sm" id="get-manager-location-btn" type="button">🎯 Current GPS</button>
-            <button class="btn btn-primary btn-sm" type="submit">💾 Save Area Zone</button>
-          </div>
-        </form>
-      </div>
+        <div class="mt-16">
+          <button class="btn btn-primary" type="submit">Open Attendance Window</button>
+        </div>
+      </form>
     </div>
 
-    <!-- Mini Map & Zone Status -->
-    <div class="card mt-24 mb-24">
+    <div class="card mb-24">
       <div class="card-header">
         <div>
-          <h3 class="section-title">📍 Area Zone Geofence Map</h3>
-          <p class="section-hint">Active center coordinates & boundary visualization</p>
+          <h3 class="section-title">Area Zone</h3>
+          <p class="section-hint">Define the live geofence used for attendance verification</p>
         </div>
+        <span class="status-chip" id="zone-chip"><span class="dot"></span>Geofence</span>
       </div>
-      <div id="dash-map" style="height: 220px; border-radius:12px; background:#0f1720;"></div>
+
+      <div class="search-box-row" style="position:relative; margin-bottom:12px;">
+        <div style="display:flex; gap:8px;">
+          <input id="place-search-input" placeholder="Search address or building" style="flex:1; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
+          <button class="btn btn-primary btn-sm" id="place-search-btn" type="button">Search</button>
+        </div>
+        <div id="search-results-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:999; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:8px; max-height:200px; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.12); margin-top:4px;"></div>
+      </div>
+
+      <div id="dashboard-zone-map" style="height: 280px; border-radius:12px; border:1px solid var(--border); background:#0f1720;"></div>
+      <div id="dash-zone-details" class="hint-pill mt-12">Checking active area zone details...</div>
+
+      <form id="zone-form" class="mt-16">
+        <div class="field mb-16">
+          <label for="zone-name" style="display:block; margin-bottom:6px; font-weight:600;">Zone Name / Description</label>
+          <input id="zone-name" placeholder="e.g. Main Science Auditorium" required style="width:100%; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
+        </div>
+
+        <div class="grid grid-2 gap-12">
+          <div class="field">
+            <label for="zone-lat" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Center Latitude</label>
+            <input id="zone-lat" type="number" step="0.000001" placeholder="6.6731" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
+          </div>
+          <div class="field">
+            <label for="zone-lng" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Center Longitude</label>
+            <input id="zone-lng" type="number" step="0.000001" placeholder="-1.5670" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
+          </div>
+        </div>
+
+        <div class="field mt-16">
+          <div class="flex-between mb-4">
+            <label for="zone-radius" style="font-weight:600;">Allowed Radius Boundary</label>
+            <span id="radius-val-disp" class="mono" style="color:var(--accent); font-weight:700;">100 meters</span>
+          </div>
+          <input id="zone-radius" type="range" min="10" max="2000" step="10" value="100" style="width:100%;">
+        </div>
+
+        <div class="flex-between mt-20 gap-12">
+          <button class="btn btn-ghost" id="get-manager-location-btn" type="button">Use My Current GPS Location</button>
+          <button class="btn btn-primary" type="submit">Save Area Zone</button>
+        </div>
+      </form>
     </div>
 
     <div class="grid grid-2">
       <div class="card chart-card">
         <div class="card-header">
           <div>
-            <h3 class="section-title">7-day attendance trend</h3>
-            <p class="section-hint">Animated trend view for the last week</p>
+            <h3 class="section-title">7-Day Attendance Trend</h3>
+            <p class="section-hint">Attendance count for the past week</p>
           </div>
-          <span class="status-chip"><span class="dot dot-live"></span>Live feed</span>
         </div>
         <svg id="trend-chart" viewBox="0 0 560 220" width="100%" height="220"></svg>
       </div>
       <div class="card chart-card">
         <div class="card-header">
           <div>
-            <h3 class="section-title">Course breakdown</h3>
-            <p class="section-hint">Live distribution across courses</p>
+            <h3 class="section-title">Course Breakdown</h3>
+            <p class="section-hint">Attendance distribution by course</p>
           </div>
-          <span class="status-chip"><span class="dot dot-live"></span>Updated</span>
         </div>
         <div id="course-breakdown" class="breakdown-list"></div>
       </div>
     </div>
   </div>
 
-  <aside class="dashboard-side">
-    <div class="card executive-card">
-      <div class="card-header">
-        <div>
-          <h3 class="section-title">Executive summary</h3>
-          <p class="section-hint">At-a-glance leadership view</p>
-        </div>
-        <span class="status-chip"><span class="dot dot-live"></span>Syncing</span>
-      </div>
-      <div class="summary-list">
-        <div class="summary-row"><span>Attendance pulse</span><strong id="summary-pulse">–</strong></div>
-        <div class="summary-row"><span>Confidence quality</span><strong id="summary-confidence">–</strong></div>
-        <div class="summary-row"><span>Operational alerts</span><strong id="summary-alerts">–</strong></div>
-      </div>
-    </div>
-
-    <div class="card executive-card">
-      <h3 class="section-title">Live performance</h3>
-      <p class="section-hint">Recognition health across the current session</p>
-      <div class="score-meter">
-        <div class="score-meter-ring" id="score-ring">
-          <span class="score-value" id="summary-score">–</span>
-        </div>
-        <div>
-          <div class="score-label">confidence score</div>
-          <div class="score-caption">Steady recognition quality backed by the latest scans.</div>
-        </div>
-      </div>
-      <div class="mini-bars">
-        <div class="mini-bar-row">
-          <span class="mini-label">Recognition quality</span>
-          <div class="mini-track"><div class="mini-fill" id="quality-fill"></div></div>
-        </div>
-        <div class="mini-bar-row">
-          <span class="mini-label">Attendance readiness</span>
-          <div class="mini-track"><div class="mini-fill" id="readiness-fill"></div></div>
-        </div>
-      </div>
-    </div>
-  </aside>
 </div>
 {% endif %}
 {% endblock %}
+
 
 {% block scripts %}
 <script>
 let mapInstance = null;
 let mapMarker = null;
 let mapCircle = null;
+let dashboardZoneMap = null;
+let dashboardZoneMarker = null;
+let dashboardZoneCircle = null;
 let sessionCountdownInterval = null;
 
 const userRole = "{{ session.get('role') }}";
@@ -474,7 +411,7 @@ async function loadStudentDashboard() {
     if (res.ok && res.zone) {
       const z = res.zone;
       document.getElementById('stu-zone-details').innerHTML = `
-        <strong>📍 Active Zone:</strong> ${z.name || 'Lecture Hall'} | Center: Lat ${z.lat.toFixed(4)}, Lng ${z.lng.toFixed(4)} | Radius: ${z.radius_meters}m
+        <strong>Active Zone:</strong> ${z.name || 'Lecture Hall'} | Center: Lat ${z.lat.toFixed(4)}, Lng ${z.lng.toFixed(4)} | Radius: ${z.radius_meters}m
       `;
       updateMap('stu-map-preview', z.lat, z.lng, z.radius_meters);
     } else {
@@ -541,7 +478,7 @@ function setupStudentSelfEnrollment() {
         slots.forEach((slot, index) => {
           if (index < stuCurrentSamples) {
             slot.classList.add('filled');
-            slot.innerHTML = '✓';
+            slot.innerHTML = '';
           }
         });
 
@@ -594,21 +531,6 @@ async function loadManagerDashboard() {
     if (document.getElementById('stat-rejected')) document.getElementById('stat-rejected').textContent = `${stats.rejected_events} rejected scans logged`;
     if (document.getElementById('hero-today')) document.getElementById('hero-today').textContent = stats.today_present;
 
-    if (document.getElementById('summary-pulse')) document.getElementById('summary-pulse').textContent = `${stats.today_present} present`;
-    if (document.getElementById('summary-confidence')) document.getElementById('summary-confidence').textContent = `${stats.avg_confidence}% confidence`;
-    if (document.getElementById('summary-alerts')) document.getElementById('summary-alerts').textContent = `${stats.flagged} alerts`;
-    if (document.getElementById('summary-score')) document.getElementById('summary-score').textContent = `${stats.avg_confidence}%`;
-
-    const quality = Math.max(35, Math.min(98, stats.avg_confidence));
-    const readiness = Math.max(45, Math.min(96, stats.attendance_rate));
-    const ring = document.getElementById('score-ring');
-    if (ring) {
-      ring.style.background = `conic-gradient(var(--accent) ${quality}%, rgba(47,140,94,0.14) ${quality}% 100%)`;
-    }
-    const qualityFill = document.getElementById('quality-fill');
-    const readinessFill = document.getElementById('readiness-fill');
-    if (qualityFill) qualityFill.style.width = `${quality}%`;
-    if (readinessFill) readinessFill.style.width = `${readiness}%`;
   } catch (e) { toast(e.message, 'error'); }
 
   try {
@@ -633,13 +555,23 @@ async function loadManagerDashboard() {
       if (document.getElementById('zone-lng')) document.getElementById('zone-lng').value = z.lng;
       if (document.getElementById('zone-radius')) {
         document.getElementById('zone-radius').value = z.radius_meters;
-        if (document.getElementById('radius-disp')) document.getElementById('radius-disp').textContent = `${z.radius_meters} meters`;
+        const radiusDisp = document.getElementById('radius-val-disp');
+        if (radiusDisp) radiusDisp.textContent = `${z.radius_meters} meters`;
       }
-      updateMap('dash-map', z.lat, z.lng, z.radius_meters);
+      if (document.getElementById('dash-zone-details')) {
+        document.getElementById('dash-zone-details').innerHTML = `
+          <strong>Active Zone:</strong> ${z.name || 'Lecture Hall'} | Center: Lat ${z.lat.toFixed(4)}, Lng ${z.lng.toFixed(4)} | Radius: ${z.radius_meters}m
+        `;
+      }
+      updateMap('dashboard-zone-map', z.lat, z.lng, z.radius_meters);
+      initDashboardZoneMap(z.lat, z.lng, z.radius_meters);
       if (document.getElementById('zone-chip')) document.getElementById('zone-chip').innerHTML = '<span class="dot dot-live"></span>Active Zone';
+    } else if (document.getElementById('dash-zone-details')) {
+      document.getElementById('dash-zone-details').textContent = 'No active area zone configured by manager.';
     }
   } catch (e) { /* ignore */ }
 
+  await refreshCourseSelectOptions();
   setupManagerControls();
 }
 
@@ -670,10 +602,10 @@ function updateMap(containerId, lat, lng, radius) {
         radius: parseFloat(radius) || 100
       }).addTo(mapInstance);
     } catch (e) {
-      container.innerHTML = `<div style="padding:15px; text-align:center; color:#7d8a7a; font-size:0.85rem;">📍 Zone: Lat ${lat}, Lng ${lng} (${radius}m radius)</div>`;
+      container.innerHTML = `<div style="padding:15px; text-align:center; color:#7d8a7a; font-size:0.85rem;">Zone: Lat ${lat}, Lng ${lng} (${radius}m radius)</div>`;
     }
   } else {
-    container.innerHTML = `<div style="padding:15px; text-align:center; color:#7d8a7a; font-size:0.85rem;">📍 Zone: Lat ${lat}, Lng ${lng} (${radius}m radius)</div>`;
+    container.innerHTML = `<div style="padding:15px; text-align:center; color:#7d8a7a; font-size:0.85rem;">Zone: Lat ${lat}, Lng ${lng} (${radius}m radius)</div>`;
   }
 }
 
@@ -715,7 +647,173 @@ function renderInactiveSessionBanner() {
   if (sessionCountdownInterval) clearInterval(sessionCountdownInterval);
 }
 
+function updateDashboardZoneInputs(lat, lng) {
+  const latInput = document.getElementById('zone-lat');
+  const lngInput = document.getElementById('zone-lng');
+  if (latInput) latInput.value = Number(lat).toFixed(6);
+  if (lngInput) lngInput.value = Number(lng).toFixed(6);
+
+  if (dashboardZoneMarker) dashboardZoneMarker.setLatLng([lat, lng]);
+  if (dashboardZoneCircle) dashboardZoneCircle.setLatLng([lat, lng]);
+  if (dashboardZoneMap) dashboardZoneMap.panTo([lat, lng]);
+}
+
+function initDashboardZoneMap(lat = 6.6731, lng = -1.5670, radius = 100) {
+  const container = document.getElementById('dashboard-zone-map');
+  if (!container) return;
+
+  if (typeof L !== 'undefined') {
+    if (!dashboardZoneMap) {
+      dashboardZoneMap = L.map('dashboard-zone-map').setView([lat, lng], 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+      }).addTo(dashboardZoneMap);
+
+      dashboardZoneMap.on('click', (e) => {
+        updateDashboardZoneInputs(e.latlng.lat, e.latlng.lng);
+      });
+    } else {
+      dashboardZoneMap.setView([lat, lng], 15);
+    }
+
+    if (dashboardZoneMarker) dashboardZoneMap.removeLayer(dashboardZoneMarker);
+    if (dashboardZoneCircle) dashboardZoneMap.removeLayer(dashboardZoneCircle);
+
+    dashboardZoneMarker = L.marker([lat, lng], { draggable: true }).addTo(dashboardZoneMap);
+    dashboardZoneMarker.on('dragend', (e) => {
+      const pos = e.target.getLatLng();
+      updateDashboardZoneInputs(pos.lat, pos.lng);
+    });
+
+    dashboardZoneCircle = L.circle([lat, lng], {
+      color: '#2f8c5e',
+      fillColor: '#2f8c5e',
+      fillOpacity: 0.25,
+      radius: parseFloat(radius) || 100
+    }).addTo(dashboardZoneMap);
+  } else {
+    container.innerHTML = `<div style="padding:40px; text-align:center; color:#7d8a7a;">Zone: Lat ${lat}, Lng ${lng} (${radius}m radius)</div>`;
+  }
+}
+
+async function refreshCourseSelectOptions() {
+  const courseSelect = document.getElementById('session-course');
+  if (!courseSelect) return;
+
+  try {
+    const res = await api('/api/courses');
+    const courses = res.courses || [];
+    const existing = courseSelect.value;
+    const options = ['ALL', ...courses];
+
+    courseSelect.innerHTML = options.map((course) => {
+      const label = course === 'ALL' ? 'All Courses' : course;
+      return `<option value="${course}">${label}</option>`;
+    }).join('');
+
+    if (courses.length && existing && options.includes(existing)) {
+      courseSelect.value = existing;
+    } else if (courses.length) {
+      courseSelect.value = courses[0];
+    } else {
+      courseSelect.value = 'ALL';
+    }
+  } catch (e) {
+    console.warn('Could not refresh course list', e);
+  }
+}
+
+function setupDashboardLocationSearch() {
+  const input = document.getElementById('place-search-input');
+  const btn = document.getElementById('place-search-btn');
+  const dropdown = document.getElementById('search-results-dropdown');
+  if (!input || !btn || !dropdown) return;
+
+  const doSearch = async () => {
+    const q = input.value.trim();
+    if (!q) return;
+    toast('Searching location…');
+    try {
+      const res = await api(`/api/geocode?q=${encodeURIComponent(q)}`);
+      if (res.ok && res.results && res.results.length > 0) {
+        dropdown.innerHTML = res.results.map((r, i) => `
+          <div class="search-item" data-index="${i}" style="padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer; font-size:0.85rem;" onmouseover="this.style.background='rgba(47,140,94,0.2)'" onmouseout="this.style.background='transparent'">
+            ${r.display_name}
+          </div>
+        `).join('');
+        dropdown.style.display = 'block';
+
+        dropdown.querySelectorAll('.search-item').forEach((el, index) => {
+          el.addEventListener('click', () => {
+            const loc = res.results[index];
+            updateDashboardZoneInputs(loc.lat, loc.lng);
+            document.getElementById('zone-name').value = loc.display_name.split(',')[0];
+            dropdown.style.display = 'none';
+            toast(`Moved zone to: ${loc.display_name.split(',')[0]}`);
+          });
+        });
+      } else {
+        toast('No matching locations found.', 'warn');
+        dropdown.style.display = 'none';
+      }
+    } catch (e) {
+      toast('Location search failed.', 'error');
+    }
+  };
+
+  btn.addEventListener('click', doSearch);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      doSearch();
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-box-row')) {
+      dropdown.style.display = 'none';
+    }
+  });
+}
+
 function setupManagerControls() {
+  if (document.getElementById('dashboard-zone-map')) {
+    const radiusInput = document.getElementById('zone-radius');
+    if (radiusInput) {
+      radiusInput.addEventListener('input', () => {
+        const radius = parseFloat(radiusInput.value) || 100;
+        const disp = document.getElementById('radius-val-disp');
+        if (disp) disp.textContent = `${radius} meters`;
+        if (dashboardZoneCircle) dashboardZoneCircle.setRadius(radius);
+      });
+    }
+
+    ['zone-lat', 'zone-lng'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => {
+          const lat = parseFloat(document.getElementById('zone-lat').value);
+          const lng = parseFloat(document.getElementById('zone-lng').value);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            updateDashboardZoneInputs(lat, lng);
+          }
+        });
+      }
+    });
+
+    setupDashboardLocationSearch();
+    const defaultLat = 6.6731;
+    const defaultLng = -1.5670;
+    const defaultRadius = 100;
+    if (!document.getElementById('zone-lat').value) {
+      document.getElementById('zone-lat').value = defaultLat;
+      document.getElementById('zone-lng').value = defaultLng;
+      document.getElementById('zone-radius').value = defaultRadius;
+      document.getElementById('radius-val-disp').textContent = `${defaultRadius} meters`;
+    }
+    initDashboardZoneMap(parseFloat(document.getElementById('zone-lat').value || defaultLat), parseFloat(document.getElementById('zone-lng').value || defaultLng), parseFloat(document.getElementById('zone-radius').value || defaultRadius));
+  }
+
   const zoneForm = document.getElementById('zone-form');
   if (zoneForm && !zoneForm.dataset.bound) {
     zoneForm.dataset.bound = 'true';
@@ -727,13 +825,13 @@ function setupManagerControls() {
       const name = document.getElementById('zone-name').value;
 
       try {
-        const res = await api('/api/zone', {
+        await api('/api/zone', {
           method: 'POST',
           body: JSON.stringify({ lat, lng, radius_meters: radius, name })
         });
         toast('Area Zone saved successfully!');
-        updateMap('dash-map', lat, lng, radius);
-        document.getElementById('zone-chip').innerHTML = '<span class="dot dot-live"></span>Active Zone';
+        updateMap('dashboard-zone-map', lat, lng, radius);
+        if (document.getElementById('zone-chip')) document.getElementById('zone-chip').innerHTML = '<span class="dot dot-live"></span>Active Zone';
       } catch (err) {
         toast(err.message, 'error');
       }
@@ -750,10 +848,9 @@ function setupManagerControls() {
       }
       toast('Fetching GPS coordinates…');
       navigator.geolocation.getCurrentPosition((pos) => {
-        document.getElementById('zone-lat').value = pos.coords.latitude.toFixed(6);
-        document.getElementById('zone-lng').value = pos.coords.longitude.toFixed(6);
+        updateDashboardZoneInputs(pos.coords.latitude, pos.coords.longitude);
         toast('Current GPS coordinates applied!');
-        updateMap('dash-map', pos.coords.latitude, pos.coords.longitude, document.getElementById('zone-radius').value);
+        updateMap('dashboard-zone-map', pos.coords.latitude, pos.coords.longitude, document.getElementById('zone-radius').value);
       }, (err) => {
         toast('Location access denied or unavailable', 'error');
       }, { enableHighAccuracy: true });

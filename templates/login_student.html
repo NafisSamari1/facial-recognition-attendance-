@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Student Login - Verascan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body>
+    <div class="login-shell">
+      <div class="login-card">
+        <div class="login-hero">
+          <div class="login-pill">Student Portal</div>
+          <div class="login-brandrow">
+            <img class="brand-logo login-logo" src="{{ url_for('static', filename='images/knust-logo-png_seeklogo-618224.png') }}" alt="Verascan logo">
+            <div>
+              <div class="eyebrow">Identity & Attendance</div>
+              <h1 class="page-title login-title">Student Login</h1>
+            </div>
+          </div>
+          <p class="page-sub" style="margin-top: 16px;">Sign in with your Student ID to view active class signals, area zones, and mark attendance.</p>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="card mt-16">
+              {% for message in messages %}
+                <div class="hint-pill">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <form method="post" class="login-form mt-16">
+          <input type="hidden" name="device_id" id="login_device_id">
+          <input type="hidden" name="device_name" id="login_device_name">
+          
+          <div class="field mb-12">
+            <label for="student_id">Student ID</label>
+            <input id="student_id" name="student_id" placeholder="e.g. STU001 or 20849102" required>
+            <p style="font-size:0.8rem; color:var(--text-mute); margin-top:6px;">
+              Enter your registered Student ID to log in to your student dashboard.
+            </p>
+          </div>
+          <button class="btn btn-primary btn-block mt-16" type="submit">Sign in as Student</button>
+        </form>
+        
+      </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        if (typeof getDeviceId === 'function') {
+          document.getElementById('login_device_id').value = getDeviceId();
+          document.getElementById('login_device_name').value = getDeviceName();
+        }
+      });
+    </script>
+  </body>
+</html>
