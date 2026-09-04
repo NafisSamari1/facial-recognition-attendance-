@@ -495,10 +495,15 @@ def api_zone():
         payload = request.get_json(force=True)
         lat = payload.get("lat")
         lng = payload.get("lng")
-        radius = payload.get("radius_meters", 100.0)
-        name = (payload.get("name") or "Lecture Hall Zone").strip()
-        if lat is None or lng is None:
-            return jsonify({"ok": False, "error": "Latitude and longitude are required."}), 400
+        radius = payload.get("radius_meters")
+        name = (payload.get("name") or "").strip()
+        if lat is None or lng is None or radius is None or not name:
+            return jsonify({"ok": False, "error": "Zone name, latitude, longitude, and radius are required."}), 400
+        try:
+            if float(radius) <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "Radius must be greater than zero."}), 400
         zone = db.set_active_zone(lat, lng, radius, name)
         return jsonify({"ok": True, "zone": zone})
     
@@ -531,9 +536,19 @@ def api_active_session():
 def api_start_session():
 
     payload = request.get_json(force=True)
-    course = (payload.get("course") or "ALL").strip()
-    duration = int(payload.get("duration_minutes", 15))
-    title = (payload.get("title") or f"{course} Attendance Window").strip()
+    course = (payload.get("course") or "").strip()
+    duration_value = payload.get("duration_minutes")
+    title = (payload.get("title") or "").strip()
+    if not course or duration_value is None:
+        return jsonify({"ok": False, "error": "Course and attendance duration are required."}), 400
+    try:
+        duration = int(duration_value)
+        if duration < 1:
+            raise ValueError
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "Attendance duration must be at least one minute."}), 400
+    if not title:
+        title = f"{course} Attendance Session"
 
     zone = db.get_active_zone()
     if not zone:

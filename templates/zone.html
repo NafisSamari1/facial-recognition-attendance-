@@ -46,84 +46,55 @@
         </div>
       </div>
 
-      <form id="zone-setup-form">
+      <form id="area-zone-broadcast-form">
         <div class="field mb-16">
           <label for="zone-name" style="display:block; margin-bottom:6px; font-weight:600;">Zone Name / Description</label>
-          <input id="zone-name" placeholder="e.g. Main Science Auditorium" required style="width:100%; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
+          <input id="zone-name" placeholder="Enter the attendance area name" required style="width:100%; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
         </div>
 
         <div class="grid grid-2 gap-12">
           <div class="field">
             <label for="zone-lat" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Center Latitude</label>
-            <input id="zone-lat" type="number" step="0.000001" placeholder="6.6731" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
+            <input id="zone-lat" type="number" step="0.000001" placeholder="Enter latitude" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
           </div>
           <div class="field">
             <label for="zone-lng" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Center Longitude</label>
-            <input id="zone-lng" type="number" step="0.000001" placeholder="-1.5670" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
+            <input id="zone-lng" type="number" step="0.000001" placeholder="Enter longitude" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); color:var(--text);">
           </div>
         </div>
 
         <div class="field mt-16">
           <div class="flex-between mb-4">
             <label for="zone-radius" style="font-weight:600;">Allowed Radius Boundary</label>
-            <span id="radius-val-disp" class="mono" style="color:var(--accent); font-weight:700;">100 meters</span>
+            <span id="radius-val-disp" class="mono" style="color:var(--accent); font-weight:700;">Enter radius</span>
           </div>
-          <input id="zone-radius" type="range" min="10" max="2000" step="10" value="100" style="width:100%;">
+          <input id="zone-radius" type="number" min="1" max="2000" step="1" placeholder="Enter radius in meters" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
         </div>
 
         <div class="flex-between mt-20 gap-12">
           <button class="btn btn-ghost" id="use-my-gps-btn" type="button">Use My Current GPS Location</button>
-          <button class="btn btn-primary" type="submit">Save Area Zone</button>
+          <button class="btn btn-primary" type="submit">Broadcast Area Zone Attendance Session</button>
         </div>
+        <div id="combined-session-status" class="hint-pill mt-12" hidden></div>
         <button class="btn btn-ghost btn-sm mt-12" id="clear-zone-btn" type="button">Clear active zone</button>
-      </form>
-    </div>
-
-    <!-- Card 2: Active Session Broadcast Panel -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <h3 class="section-title">Broadcast Attendance Session</h3>
-          <p class="section-hint">Open attendance taking window for students in this zone.</p>
-        </div>
-        <span class="status-chip" id="session-status-chip"><span class="dot"></span>Idle</span>
-      </div>
-
-      <div id="zone-active-session-banner" class="hint-pill mb-16" style="display:none; background: rgba(47,140,94,0.15); border: 1px solid var(--accent); color: var(--accent); padding: 12px 16px; border-radius: 10px;">
-        <div class="flex-between">
-          <div>
-            <strong id="zone-session-title">CS101 Session</strong>
-            <div style="font-size:0.85rem; opacity:0.9; margin-top:2px;">Window closes in: <span id="zone-session-timer" style="font-weight:700; font-family:monospace;">00:00</span></div>
+        <div class="session-fields mt-24">
+          <h3 class="section-title">Session details</h3>
+          <div class="grid grid-2 gap-12 mt-12">
+            <div class="field">
+              <label for="zone-session-course">Target Course</label>
+              <select id="zone-session-course" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
+                <option value="" selected disabled>Select a course</option>
+                <option value="ALL">All Courses</option>
+                <option value="BSc Computer Science">BSc Computer Science</option>
+                <option value="BSc Electrical Engineering">BSc Electrical Engineering</option>
+                <option value="BSc Business Administration">BSc Business Administration</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="zone-session-duration">Attendance duration</label>
+              <input id="zone-session-duration" type="number" min="1" max="240" step="1" placeholder="Minutes" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
+            </div>
           </div>
-          <button class="btn btn-ghost btn-sm" id="zone-end-session-btn" type="button">Stop Signal</button>
-        </div>
-      </div>
-
-      <form id="zone-session-form">
-        <div class="grid grid-2 gap-12">
-          <div class="field">
-            <label for="zone-session-course" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Target Course</label>
-            <select id="zone-session-course" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
-              <option value="ALL">ALL Courses & Classes</option>
-              <option value="BSc Computer Science">BSc Computer Science</option>
-              <option value="BSc Electrical Engineering">BSc Electrical Engineering</option>
-              <option value="BSc Business Administration">BSc Business Administration</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="zone-session-duration" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Time Window</label>
-            <select id="zone-session-duration" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
-              <option value="5">5 Minutes</option>
-              <option value="15" selected>15 Minutes</option>
-              <option value="30">30 Minutes</option>
-              <option value="60">60 Minutes</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="mt-16">
-          <button class="btn btn-primary" type="submit" style="width:100%;">Save Zone & Start Attendance</button>
         </div>
       </form>
     </div>
@@ -152,7 +123,7 @@ function setupRadiusSlider() {
   if (slider && disp) {
     slider.addEventListener('input', () => {
       const val = slider.value;
-      disp.textContent = `${val} meters`;
+      disp.textContent = val ? `${val} meters` : 'Enter radius';
       if (zoneCircle) {
         zoneCircle.setRadius(parseFloat(val));
       }
@@ -164,16 +135,15 @@ async function loadCurrentZone() {
   try {
     const res = await api('/api/zone');
     if (res.ok && res.zone) {
-      document.getElementById('zone-name').value = res.zone.name || 'Lecture Hall Zone';
+      document.getElementById('zone-name').value = res.zone.name || '';
       document.getElementById('zone-lat').value = res.zone.lat.toFixed(6);
       document.getElementById('zone-lng').value = res.zone.lng.toFixed(6);
-      document.getElementById('zone-radius').value = res.zone.radius_meters || 100;
-      document.getElementById('radius-val-disp').textContent = `${res.zone.radius_meters || 100} meters`;
-      document.getElementById('zone-status-chip').innerHTML = '<span class="dot dot-live"></span>Active Zone Set';
+      document.getElementById('zone-radius').value = res.zone.radius_meters || '';
+      document.getElementById('radius-val-disp').textContent = res.zone.radius_meters ? `${res.zone.radius_meters} meters` : 'Enter radius';
+      document.getElementById('zone-status-chip').innerHTML = `<span class="dot dot-live"></span>${res.zone.name || 'Active zone'}`;
       initMap(res.zone.lat, res.zone.lng, res.zone.radius_meters);
     } else {
       document.getElementById('zone-status-chip').innerHTML = '<span class="dot"></span>Not Set';
-      initMap(0, 0, 100);
     }
   } catch (e) {
     document.getElementById('zone-status-chip').innerHTML = '<span class="dot"></span>Unavailable';
@@ -306,13 +276,26 @@ function setupFormHandlers() {
     return res.zone;
   }
 
-  const form = document.getElementById('zone-setup-form');
+  const form = document.getElementById('area-zone-broadcast-form');
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
+        const course = document.getElementById('zone-session-course').value;
+        const duration = parseInt(document.getElementById('zone-session-duration').value, 10);
+        if (!course || !Number.isInteger(duration) || duration < 1) {
+          throw new Error('Select a course and enter the attendance duration.');
+        }
         const zone = await saveZone();
-        toast(`Area zone "${zone.name}" saved successfully.`);
+        const res = await api('/api/sessions/start', {
+          method: 'POST',
+          body: JSON.stringify({ course, duration_minutes: duration, title: `${course === 'ALL' ? 'General' : course} Attendance - ${zone.name}` })
+        });
+        const status = document.getElementById('combined-session-status');
+        status.textContent = `Attendance in progress at ${zone.name} for ${duration} minutes.`;
+        status.hidden = false;
+        toast(`Attendance in progress at ${zone.name} for ${duration} minutes.`);
+        renderSessionBanner(res.session);
       } catch (err) {
         toast(err.message, 'error');
       }
@@ -363,27 +346,6 @@ function setupFormHandlers() {
     }
   });
 
-  const sessionForm = document.getElementById('zone-session-form');
-  if (sessionForm) {
-    sessionForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const course = document.getElementById('zone-session-course').value;
-      const duration = parseInt(document.getElementById('zone-session-duration').value);
-
-      try {
-        const zone = await saveZone();
-        const res = await api('/api/sessions/start', {
-          method: 'POST',
-          body: JSON.stringify({ course, duration_minutes: duration, title: `${course === 'ALL' ? 'General' : course} Attendance - ${zone.name}` })
-        });
-        toast(`Attendance in progress at ${zone.name} for ${duration} minutes.`);
-        renderSessionBanner(res.session);
-      } catch (err) {
-        toast(err.message, 'error');
-      }
-    });
-  }
-
   const endBtn = document.getElementById('zone-end-session-btn');
   if (endBtn) {
     endBtn.addEventListener('click', async () => {
@@ -416,6 +378,7 @@ async function loadActiveSession() {
 }
 
 function renderSessionBanner(session) {
+  const combinedStatus = document.getElementById('combined-session-status');
   const banner = document.getElementById('zone-active-session-banner');
   const chip = document.getElementById('session-status-chip');
   const title = document.getElementById('zone-session-title');
@@ -424,6 +387,10 @@ function renderSessionBanner(session) {
   if (banner) banner.style.display = 'block';
   if (chip) chip.innerHTML = '<span class="dot dot-live"></span>Broadcasting';
   if (title) title.textContent = session.title || `${session.course} Session`;
+  if (combinedStatus) {
+    combinedStatus.textContent = `Attendance in progress for ${session.course} (${session.seconds_remaining || 0} seconds remaining).`;
+    combinedStatus.hidden = false;
+  }
 
   let remaining = session.seconds_remaining || 0;
   if (sessionInterval) clearInterval(sessionInterval);
@@ -446,10 +413,12 @@ function renderSessionBanner(session) {
 }
 
 function renderInactiveSession() {
+  const combinedStatus = document.getElementById('combined-session-status');
   const banner = document.getElementById('zone-active-session-banner');
   const chip = document.getElementById('session-status-chip');
   if (banner) banner.style.display = 'none';
   if (chip) chip.innerHTML = '<span class="dot"></span>Idle';
+  if (combinedStatus) combinedStatus.hidden = true;
   if (sessionInterval) clearInterval(sessionInterval);
 }
 
