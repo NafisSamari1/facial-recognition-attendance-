@@ -101,7 +101,8 @@ python app.py
 
 - LBPH acceptance threshold is configured in `face_utils.py` as `CONFIDENCE_ACCEPT_THRESHOLD`.
 - The app converts LBPH distance to a 0–100% confidence score for user-facing explainability.
-- Attendance records are stored in SQLite at `data/db/attendance.db`.
+- When `DATABASE_URL` is set, all portals use the PostgreSQL database at that URL. Without it, local development uses SQLite at `data/db/attendance.db`.
+- Registration and student login must use the same running app URL, otherwise they can connect to different databases.
 - `recognition_events` logs every scan, including low-confidence or rejected matches.
 
 ## Limitations and future work
@@ -128,6 +129,17 @@ python app.py
 ```
 
 Then visit **http://localhost:5000**.
+
+To use the same PostgreSQL database as the Render deployment locally, set the
+Render PostgreSQL External Database URL before starting the app:
+
+```powershell
+$env:DATABASE_URL="your-render-postgresql-connection-string"
+python app.py
+```
+
+Register the student and log in through the same URL after connecting to that
+database.
 
 ## Render deployment
 
