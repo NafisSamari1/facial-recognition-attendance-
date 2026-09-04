@@ -270,6 +270,27 @@ def api_geocode():
         return jsonify({"ok": False, "error": str(e), "results": []})
 
 
+@app.route("/api/reverse-geocode")
+def api_reverse_geocode():
+    lat = request.args.get("lat")
+    lng = request.args.get("lng")
+    if lat is None or lng is None:
+        return jsonify({"ok": False, "error": "Latitude and longitude are required."}), 400
+    try:
+        import json
+        import urllib.request
+        url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={urllib.parse.quote(str(lat))}&lon={urllib.parse.quote(str(lng))}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'VerascanAttendanceSystem/1.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode())
+        address = data.get("address", {})
+        country = address.get("country") or "Unknown country"
+        name = data.get("display_name") or country
+        return jsonify({"ok": True, "name": name, "country": country})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+
 
 # --------------------------------------------------------------- API -------
 

@@ -257,6 +257,7 @@
       </div>
 
       <div id="dashboard-zone-map" style="height: 280px; border-radius:12px; border:1px solid var(--border); background:#0f1720;"></div>
+      <div id="dashboard-map-place" class="hint-pill mt-12">Detecting your country for map view...</div>
       <div id="dash-zone-details" class="hint-pill mt-12">Checking active area zone details...</div>
 
       <div class="mt-16">
@@ -274,7 +275,7 @@
         <div class="field mt-16">
           <div class="flex-between mb-4">
             <label for="zone-radius" style="font-weight:600;">Allowed Radius Boundary</label>
-            <span id="radius-val-disp" class="mono" style="color:var(--accent); font-weight:700;">100 meters</span>
+            <span id="radius-val-disp" class="mono" style="color:var(--accent); font-weight:700;">Set radius</span>
           </div>
             <input id="zone-radius" type="number" min="1" max="2000" step="1" placeholder="Enter radius in meters" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
         </div>
@@ -611,7 +612,7 @@ function updateMap(containerId, lat, lng, radius) {
         color: '#2f8c5e',
         fillColor: '#2f8c5e',
         fillOpacity: 0.25,
-        radius: parseFloat(radius) || 100
+        radius: parseFloat(radius)
       }).addTo(mapInstance);
     } catch (e) {
       container.innerHTML = `<div style="padding:15px; text-align:center; color:#7d8a7a; font-size:0.85rem;">Zone: Lat ${lat}, Lng ${lng} (${radius}m radius)</div>`;
@@ -668,6 +669,32 @@ function updateDashboardZoneInputs(lat, lng) {
   if (dashboardZoneMarker) dashboardZoneMarker.setLatLng([lat, lng]);
   if (dashboardZoneCircle) dashboardZoneCircle.setLatLng([lat, lng]);
   if (dashboardZoneMap) dashboardZoneMap.panTo([lat, lng]);
+  identifyMapPlace(lat, lng);
+}
+
+async function identifyMapPlace(lat, lng) {
+  const place = document.getElementById('dashboard-map-place');
+  if (!place) return;
+  place.textContent = 'Finding place name...';
+  try {
+    const result = await api(`/api/reverse-geocode?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`);
+    place.textContent = result.ok ? `${result.name} | Country: ${result.country}` : 'Place name unavailable';
+  } catch (e) {
+    place.textContent = 'Place name unavailable';
+  }
+}
+
+function centerMapOnCurrentLocation() {
+  if (!navigator.geolocation || dashboardZoneMap === null) return;
+  navigator.geolocation.getCurrentPosition((pos) => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    dashboardZoneMap.setView([lat, lng], 15);
+    identifyMapPlace(lat, lng);
+  }, () => {
+    const place = document.getElementById('dashboard-map-place');
+    if (place) place.textContent = 'Map ready. Search or choose an attendance location.';
+  }, { enableHighAccuracy: true, timeout: 10000 });
 }
 
 function initDashboardZoneMap(lat, lng, radius) {
@@ -687,6 +714,7 @@ function initDashboardZoneMap(lat, lng, radius) {
 
       dashboardZoneMap.on('click', (e) => {
         updateDashboardZoneInputs(e.latlng.lat, e.latlng.lng);
+        initDashboardZoneMap(e.latlng.lat, e.latlng.lng, parseFloat(document.getElementById('zone-radius').value));
       });
     } else if (hasZone) {
       dashboardZoneMap.setView([mapLat, mapLng], 15);
@@ -703,11 +731,11 @@ function initDashboardZoneMap(lat, lng, radius) {
       updateDashboardZoneInputs(pos.lat, pos.lng);
     });
 
-    dashboardZoneCircle = L.circle([lat, lng], {
+    if (Number.isFinite(Number(radius))) dashboardZoneCircle = L.circle([lat, lng], {
       color: '#2f8c5e',
       fillColor: '#2f8c5e',
       fillOpacity: 0.25,
-      radius: parseFloat(radius) || 100
+      radius: parseFloat(radius)
     }).addTo(dashboardZoneMap);
   } else {
     container.innerHTML = `<div style="padding:40px; text-align:center; color:#7d8a7a;">Zone: Lat ${lat}, Lng ${lng} (${radius}m radius)</div>`;
@@ -765,6 +793,7 @@ function setupDashboardLocationSearch() {
           el.addEventListener('click', () => {
             const loc = res.results[index];
             updateDashboardZoneInputs(loc.lat, loc.lng);
+            initDashboardZoneMap(Number(loc.lat), Number(loc.lng), parseFloat(document.getElementById('zone-radius').value));
             dropdown.style.display = 'none';
             toast(`Moved zone to: ${loc.display_name.split(',')[0]}`);
           });
@@ -821,9 +850,9 @@ function setupManagerControls() {
     const latitude = parseFloat(document.getElementById('zone-lat').value);
     const longitude = parseFloat(document.getElementById('zone-lng').value);
     const radius = parseFloat(document.getElementById('zone-radius').value);
-    if (Number.isFinite(latitude) && Number.isFinite(longitude) && Number.isFinite(radius)) {
-      initDashboardZoneMap(latitude, longitude, radius);
-    }
+    initDashboardZoneMap(latitude, longitude, radius);
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)) identifyMapPlace(latitude, longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) centerMapOnCurrentLocation();
   }
 
   const gpsBtn = document.getElementById('get-manager-location-btn');
@@ -836,8 +865,11 @@ function setupManagerControls() {
       }
       toast('Fetching GPS coordinates…');
       navigator.geolocation.getCurrentPosition((pos) => {
-        updateDashboardZoneInputs(pos.coords.latitude, pos.coords.longitude);
-        toast('Current GPS coordinates applied!');
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        if (dashboardZoneMap) dashboardZoneMap.setView([lat, lng], 15);
+        identifyMapPlace(lat, lng);
+        toast('Map centered on your current location. Choose the attendance point yourself.');
       }, (err) => {
         toast('Location access denied or unavailable', 'error');
       }, { enableHighAccuracy: true });

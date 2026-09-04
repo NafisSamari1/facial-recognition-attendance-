@@ -30,6 +30,7 @@
 
     <!-- Interactive Leaflet Map -->
     <div id="interactive-map" style="height: 380px; width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background:#0f1720;"></div>
+    <div id="zone-map-place" class="hint-pill mt-12">Detecting your country for map view...</div>
     <div style="font-size:0.8rem; color:#7d8a7a; margin-top:8px; text-align:center;">
       Tip: Click anywhere on the map or drag the pin to move the attendance zone center.
     </div>
@@ -137,6 +138,7 @@ async function loadCurrentZone() {
       initMap(res.zone.lat, res.zone.lng, res.zone.radius_meters);
     } else {
       document.getElementById('zone-status-chip').innerHTML = '<span class="dot"></span>Not Set';
+      initMap();
     }
   } catch (e) {
     document.getElementById('zone-status-chip').innerHTML = '<span class="dot"></span>Unavailable';
@@ -148,8 +150,11 @@ function initMap(lat, lng, radius) {
   if (!container) return;
 
   if (typeof L !== 'undefined') {
+    const hasZone = Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
+    const mapLat = hasZone ? Number(lat) : 0;
+    const mapLng = hasZone ? Number(lng) : 0;
     if (!zoneMap) {
-      zoneMap = L.map('interactive-map').setView([lat, lng], 16);
+      zoneMap = L.map('interactive-map').setView([mapLat, mapLng], hasZone ? 16 : 2);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap'
@@ -157,10 +162,13 @@ function initMap(lat, lng, radius) {
 
       zoneMap.on('click', (e) => {
         updatePositionInputs(e.latlng.lat, e.latlng.lng);
+        initMap(e.latlng.lat, e.latlng.lng, parseFloat(document.getElementById('zone-radius').value));
       });
-    } else {
-      zoneMap.setView([lat, lng], 16);
+    } else if (hasZone) {
+      zoneMap.setView([mapLat, mapLng], 16);
     }
+
+    if (!hasZone) return;
 
     if (zoneMarker) zoneMap.removeLayer(zoneMarker);
     if (zoneCircle) zoneMap.removeLayer(zoneCircle);
@@ -171,14 +179,27 @@ function initMap(lat, lng, radius) {
       updatePositionInputs(pos.lat, pos.lng);
     });
 
-    zoneCircle = L.circle([lat, lng], {
+    if (Number.isFinite(Number(radius))) zoneCircle = L.circle([lat, lng], {
       color: '#2f8c5e',
       fillColor: '#2f8c5e',
       fillOpacity: 0.25,
       radius: parseFloat(radius)
     }).addTo(zoneMap);
+    identifyZonePlace(lat, lng);
   } else {
     container.innerHTML = `<div style="padding:40px; text-align:center; color:#7d8a7a;">Map preview centered at Lat ${lat}, Lng ${lng} (${radius}m radius)</div>`;
+  }
+}
+
+async function identifyZonePlace(lat, lng) {
+  const place = document.getElementById('zone-map-place');
+  if (!place) return;
+  place.textContent = 'Finding place name...';
+  try {
+    const result = await api(`/api/reverse-geocode?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`);
+    place.textContent = result.ok ? `${result.name} | Country: ${result.country}` : 'Place name unavailable';
+  } catch (e) {
+    place.textContent = 'Place name unavailable';
   }
 }
 
@@ -214,6 +235,7 @@ function setupLocationSearch() {
           el.addEventListener('click', () => {
             const loc = res.results[index];
             updatePositionInputs(loc.lat, loc.lng);
+            initMap(Number(loc.lat), Number(loc.lng), parseFloat(document.getElementById('zone-radius').value));
             dropdown.style.display = 'none';
             toast('Attendance location updated from search.');
           });
