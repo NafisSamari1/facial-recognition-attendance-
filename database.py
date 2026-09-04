@@ -3,8 +3,12 @@ import sqlite3
 from datetime import datetime, date, timedelta
 from pathlib import Path
 
-import psycopg2
-from psycopg2.extras import DictCursor
+try:
+    import psycopg2
+    from psycopg2.extras import DictCursor
+except ImportError:
+    psycopg2 = None
+    DictCursor = None
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -34,6 +38,8 @@ def _as_dict(row):
 
 def get_connection():
     if USE_POSTGRES:
+        if psycopg2 is None:
+            raise RuntimeError("PostgreSQL support requires psycopg2-binary to be installed.")
         if "sslmode=" in DATABASE_URL.lower():
             conn = psycopg2.connect(DATABASE_URL, cursor_factory=DictCursor)
         else:

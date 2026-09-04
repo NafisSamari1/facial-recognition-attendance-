@@ -80,9 +80,6 @@
               <select id="zone-session-course" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
                 <option value="" selected disabled>Select a course</option>
                 <option value="ALL">All Courses</option>
-                <option value="BSc Computer Science">BSc Computer Science</option>
-                <option value="BSc Electrical Engineering">BSc Electrical Engineering</option>
-                <option value="BSc Business Administration">BSc Business Administration</option>
               </select>
             </div>
             <div class="field">
@@ -107,9 +104,28 @@ let sessionInterval = null;
 async function initZonePage() {
   setupRadiusSlider();
   setupLocationSearch();
+  await loadCourseOptions();
   await loadCurrentZone();
   await loadActiveSession();
   setupFormHandlers();
+}
+
+async function loadCourseOptions() {
+  const select = document.getElementById('zone-session-course');
+  if (!select) return;
+  try {
+    const res = await api('/api/courses');
+    const courses = res.courses || [];
+    select.innerHTML = '<option value="" selected disabled>Select a course</option><option value="ALL">All Courses</option>';
+    courses.forEach((course) => {
+      const option = document.createElement('option');
+      option.value = course;
+      option.textContent = course;
+      select.appendChild(option);
+    });
+  } catch (e) {
+    toast('Could not load registered courses.', 'error');
+  }
 }
 
 function setupRadiusSlider() {

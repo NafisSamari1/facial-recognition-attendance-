@@ -337,15 +337,8 @@ def api_create_student():
     if not student_id or not full_name or not course:
         return jsonify({"ok": False, "error": "Student ID, Full Name, and Course are required"}), 400
 
-    if not device_id:
-        device_id = f"dev-{student_id.lower()}"
-
     if db.get_student(student_id):
         return jsonify({"ok": False, "error": "A student with that ID already exists"}), 409
-
-    if db.get_student_by_device(device_id):
-        # If auto-generated device_id conflicts, append timestamp suffix
-        device_id = f"{device_id}-{os.urandom(2).hex()}"
 
     db.add_student(student_id, full_name, course, email, device_id=device_id)
     return jsonify({"ok": True, "device_id": device_id})
@@ -395,6 +388,8 @@ def api_train():
 
 @app.route("/api/recognize", methods=["POST"])
 def api_recognize():
+    if not session.get("logged_in"):
+        return jsonify({"ok": False, "error": "Authentication required"}), 401
     payload = request.get_json(force=True)
     frame = payload.get("frame")
     result = face_utils.recognize(frame)
@@ -419,6 +414,8 @@ def api_recognize():
 
 @app.route("/api/mark-attendance", methods=["POST"])
 def api_mark_attendance():
+    if not session.get("logged_in"):
+        return jsonify({"ok": False, "error": "Authentication required"}), 401
     payload = request.get_json(force=True)
     student_id = payload.get("student_id")
     confidence = float(payload.get("confidence", 0))
@@ -426,6 +423,8 @@ def api_mark_attendance():
     student = db.get_student(student_id)
     if not student:
         return jsonify({"ok": False, "error": "Unknown student"}), 404
+    if session.get("role") == "student" and student_id != session.get("student_id"):
+        return jsonify({"ok": False, "error": "You can only mark attendance for your own account."}), 403
 
     device_id = (payload.get("device_id") or "").strip()
     device_name = (payload.get("device_name") or "").strip()
@@ -459,6 +458,13 @@ def api_mark_attendance():
             "ok": False,
             "error": f"Attendance window for {student['course']} is closed. No active attendance signal broadcasted by manager."
         }), 403
+
+    if db.has_attended_today(student_id, student["course"]):
+        return jsonify({
+            "ok": False,
+            "duplicate": True,
+            "error": "Attendance has already been recorded for you today.",
+        }), 409
 
     zone_check = face_utils.check_allowed_area(location_lat, location_lng)
     if not zone_check.get("allowed"):
