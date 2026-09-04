@@ -25,6 +25,19 @@
       </div>
     </div>
 
+    <div class="card student-signal-card" id="student-signal-card">
+      <div>
+        <div class="eyebrow" id="student-signal-eyebrow">Attendance signal</div>
+        <h3 class="section-title" id="student-signal-title">Checking for an active class</h3>
+        <p class="section-hint" id="student-signal-sub">This updates automatically when your manager opens or closes attendance.</p>
+      </div>
+      <div class="student-signal-meta">
+        <span class="status-chip" id="student-signal-badge"><span class="dot"></span>Checking</span>
+        <strong class="mono" id="student-signal-timer">--:--</strong>
+        <a class="btn btn-primary btn-sm" id="student-scan-link" href="/attendance" hidden>Open attendance</a>
+      </div>
+    </div>
+
     <!-- Student Biometric Self-Service Enrollment Card & Camera Stage -->
     {% if student_summary and student_summary.student and student_summary.student.face_samples < 5 %}
     <div class="card mb-24" id="student-face-enrollment-card" style="background: rgba(225, 194, 129, 0.12); border: 1.5px solid var(--warn, #b38c3a); border-left: 5px solid var(--warn, #b38c3a);">
@@ -44,13 +57,16 @@
       </div>
 
       <!-- Student Face Capture Camera Stage -->
-      <div id="stu-face-capture-stage" class="mt-24 pt-16" style="display:none; border-top:1px solid rgba(255,255,255,0.1);">
+      <div id="stu-face-capture-stage" class="student-camera-stage mt-24 pt-16" style="display:none; border-top:1px solid rgba(255,255,255,0.1);">
         <div class="card-header">
           <div>
             <h4 class="section-title">Camera Enrollment Stage</h4>
             <p class="section-hint">Hold steady and face the camera. Capture 5 frames to complete enrollment.</p>
           </div>
-          <span class="hint-pill" id="stu-sample-status-pill">{{ student_summary.student.face_samples }} / 5 samples</span>
+          <div class="camera-stage-actions">
+            <span class="hint-pill" id="stu-sample-status-pill">{{ student_summary.student.face_samples }} / 5 samples</span>
+            <button class="btn btn-ghost btn-sm" id="stu-fullscreen-btn" type="button">Full screen</button>
+          </div>
         </div>
 
         <div class="scan-stage mt-12" style="position:relative; max-width:480px; margin:0 auto;">
@@ -79,25 +95,6 @@
     </div>
     {% endif %}
 
-    <!-- Active Class Attendance Prompt Banner for Student -->
-    <div class="card mb-24" id="student-active-signal-card" style="border: 1px solid rgba(255,255,255,0.15); border-left: 4px solid #7d8a7a;">
-      <div class="flex-between">
-        <div>
-          <div class="eyebrow" id="stu-signal-eyebrow">ATTENDANCE SIGNAL STATUS</div>
-          <h3 class="section-title" id="stu-signal-title">Checking for active class prompt…</h3>
-          <p class="section-hint" id="stu-signal-sub">Waiting for session signal from your manager broadcast</p>
-        </div>
-        <div style="text-align:right;">
-          <div class="mono" id="stu-signal-timer" style="font-size:1.5rem; font-weight:700; color:var(--accent);">--:--</div>
-          <span class="status-chip mt-4" id="stu-signal-badge"><span class="dot"></span>Checking</span>
-        </div>
-      </div>
-      <div class="mt-16" id="stu-scan-now-wrap" style="display:none;">
-        <a class="btn btn-primary btn-block" href="/attendance">Click Here to Scan & Mark Attendance Now</a>
-      </div>
-    </div>
-
-
     <!-- Personal Metrics -->
     <div class="grid grid-4" id="student-stat-cards">
       <div class="card stat-card glow-card">
@@ -116,19 +113,6 @@
         <span class="stat-label">Last Check-in</span>
         <div class="stat-value" style="font-size:0.95rem; padding-top:6px;">{{ student_summary.last_scan if student_summary else 'Never' }}</div>
       </div>
-    </div>
-
-    <!-- Active Area Zone Information (Read-Only) -->
-    <div class="card mt-24">
-      <div class="card-header">
-        <div>
-          <h3 class="section-title">Attendance Area Zone</h3>
-          <p class="section-hint">Allowed GPS location boundary set by your manager for taking attendance.</p>
-        </div>
-        <span class="status-chip" id="stu-zone-chip"><span class="dot"></span>Geofence Info</span>
-      </div>
-      <div id="stu-map-preview" style="height: 240px; border-radius:12px; background:#0f1720;"></div>
-      <div id="stu-zone-details" class="hint-pill mt-12">Checking active area zone details...</div>
     </div>
 
     <!-- Student Device Profile & Security Card -->
@@ -335,6 +319,25 @@
 
 </div>
 {% endif %}
+
+<div class="modal-backdrop" id="device-reset-modal" hidden>
+  <form class="modal-card" id="device-reset-form">
+    <div class="settings-panel__head">
+      <div>
+        <div class="eyebrow">Device security</div>
+        <h3 class="section-title">Request a device change</h3>
+      </div>
+      <button class="icon-button ghost" id="device-reset-close" type="button" aria-label="Close">✕</button>
+    </div>
+    <p class="section-hint">Tell your manager why you need this device binding reset.</p>
+    <label class="field-label" for="device-reset-reason">Reason</label>
+    <textarea id="device-reset-reason" rows="4" maxlength="500" placeholder="For example: my phone was lost or replaced" required></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="device-reset-cancel" type="button">Cancel</button>
+      <button class="btn btn-primary" type="submit">Send request</button>
+    </div>
+  </form>
+</div>
 {% endblock %}
 
 
@@ -359,75 +362,45 @@ async function loadDashboard() {
 }
 
 async function loadStudentDashboard() {
+  await refreshStudentSignal();
+  window.studentSignalInterval = setInterval(refreshStudentSignal, 5000);
+  setupStudentSelfEnrollment();
+}
+
+async function refreshStudentSignal() {
   try {
     const res = await api('/api/sessions/active');
-    const card = document.getElementById('student-active-signal-card');
-    const eyebrow = document.getElementById('stu-signal-eyebrow');
-    const title = document.getElementById('stu-signal-title');
-    const sub = document.getElementById('stu-signal-sub');
-    const timer = document.getElementById('stu-signal-timer');
-    const badge = document.getElementById('stu-signal-badge');
-    const scanWrap = document.getElementById('stu-scan-now-wrap');
-
-    if (res.ok && res.session) {
-      card.style.borderLeft = '4px solid #2f8c5e';
-      eyebrow.textContent = '🟢 ACTIVE ATTENDANCE PROMPT SIGNAL';
-      title.textContent = res.session.title || `${res.session.course} Attendance Window`;
-      sub.textContent = `Attendance window is OPEN for ${res.session.course}! Verify your GPS location to mark attendance.`;
-      badge.innerHTML = '<span class="dot dot-live"></span>Window Open';
-      if (scanWrap) scanWrap.style.display = 'block';
-
-      let remaining = res.session.seconds_remaining || 0;
-      if (sessionCountdownInterval) clearInterval(sessionCountdownInterval);
-
-      const updateCountdown = () => {
-        if (remaining <= 0) {
-          clearInterval(sessionCountdownInterval);
-          card.style.borderLeft = '4px solid #e74c3c';
-          title.textContent = 'Attendance Window Closed';
-          sub.textContent = 'The active attendance broadcast window has ended.';
-          badge.innerHTML = '<span class="dot"></span>Expired';
-          timer.textContent = '00:00';
-          if (scanWrap) scanWrap.style.display = 'none';
-          return;
-        }
-        const m = Math.floor(remaining / 60);
-        const s = remaining % 60;
-        timer.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        remaining--;
-      };
-      updateCountdown();
-      sessionCountdownInterval = setInterval(updateCountdown, 1000);
+    const session = res.session;
+    const title = document.getElementById('student-signal-title');
+    const sub = document.getElementById('student-signal-sub');
+    const badge = document.getElementById('student-signal-badge');
+    const timer = document.getElementById('student-signal-timer');
+    const link = document.getElementById('student-scan-link');
+    if (!title || !badge || !timer || !link) return;
+    if (session) {
+      title.textContent = session.title || `${session.course} attendance is open`;
+      sub.textContent = 'Your manager has opened attendance for your course.';
+      badge.innerHTML = '<span class="dot dot-live"></span>Open';
+      timer.textContent = `${Math.floor(session.seconds_remaining / 60).toString().padStart(2, '0')}:${(session.seconds_remaining % 60).toString().padStart(2, '0')}`;
+      link.hidden = false;
     } else {
-      card.style.borderLeft = '4px solid #7d8a7a';
-      eyebrow.textContent = 'ATTENDANCE SIGNAL STATUS';
-      title.textContent = 'No Active Attendance Window';
-      sub.textContent = 'Waiting for your lecturer or manager to broadcast an attendance prompt.';
-      badge.innerHTML = '<span class="dot"></span>Idle';
+      title.textContent = 'No active attendance signal';
+      sub.textContent = 'Your manager has not opened an attendance window yet.';
+      badge.innerHTML = '<span class="dot"></span>Closed';
       timer.textContent = '--:--';
-      if (scanWrap) scanWrap.style.display = 'none';
-    }
-
-    if (res.ok && res.zone) {
-      const z = res.zone;
-      document.getElementById('stu-zone-details').innerHTML = `
-        <strong>Active Zone:</strong> ${z.name || 'Lecture Hall'} | Center: Lat ${z.lat.toFixed(4)}, Lng ${z.lng.toFixed(4)} | Radius: ${z.radius_meters}m
-      `;
-      updateMap('stu-map-preview', z.lat, z.lng, z.radius_meters);
-    } else {
-      document.getElementById('stu-zone-details').textContent = 'No active area zone configured by manager.';
+      link.hidden = true;
     }
   } catch (e) {
-    toast(e.message, 'error');
+    const title = document.getElementById('student-signal-title');
+    if (title) title.textContent = 'Attendance signal unavailable';
   }
-
-  setupStudentSelfEnrollment();
 }
 
 function setupStudentSelfEnrollment() {
   const openEnrollBtn = document.getElementById('open-face-enroll-btn');
   const closeEnrollBtn = document.getElementById('stu-close-camera-btn');
   const captureBtn = document.getElementById('stu-capture-btn');
+  const fullscreenBtn = document.getElementById('stu-fullscreen-btn');
   const studentId = "{{ session.get('student_id') }}";
   let stuCurrentSamples = parseInt("{{ student_summary.student.face_samples if (student_summary and student_summary.student) else 0 }}");
 
@@ -437,6 +410,10 @@ function setupStudentSelfEnrollment() {
       const stage = document.getElementById('stu-face-capture-stage');
       if (stage) stage.style.display = 'block';
       openEnrollBtn.style.display = 'none';
+      document.body.classList.add('camera-open');
+      if (stage && stage.requestFullscreen) {
+        stage.requestFullscreen().catch(() => {});
+      }
       const video = document.getElementById('stu-video');
       try {
         await startCamera(video);
@@ -458,6 +435,27 @@ function setupStudentSelfEnrollment() {
       const stage = document.getElementById('stu-face-capture-stage');
       if (stage) stage.style.display = 'none';
       if (openEnrollBtn) openEnrollBtn.style.display = 'inline-block';
+      document.body.classList.remove('camera-open');
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    });
+  }
+
+  if (fullscreenBtn && !fullscreenBtn.dataset.bound) {
+    fullscreenBtn.dataset.bound = 'true';
+    fullscreenBtn.addEventListener('click', async () => {
+      const stage = document.getElementById('stu-face-capture-stage');
+      try {
+        if (!document.fullscreenElement) {
+          if (stage.requestFullscreen) await stage.requestFullscreen();
+          else if (stage.webkitRequestFullscreen) stage.webkitRequestFullscreen();
+          fullscreenBtn.textContent = 'Exit full screen';
+        } else {
+          await document.exitFullscreen();
+          fullscreenBtn.textContent = 'Full screen';
+        }
+      } catch (e) {
+        document.body.classList.toggle('camera-open');
+      }
     });
   }
 
@@ -499,21 +497,30 @@ function setupStudentSelfEnrollment() {
   }
 
   const resetReqBtn = document.getElementById('btn-request-device-reset');
+  const resetModal = document.getElementById('device-reset-modal');
+  const resetForm = document.getElementById('device-reset-form');
+  const closeResetModal = () => {
+    if (resetModal) resetModal.hidden = true;
+  };
   if (resetReqBtn && !resetReqBtn.dataset.bound) {
     resetReqBtn.dataset.bound = 'true';
-    resetReqBtn.addEventListener('click', async () => {
-      const reason = prompt("Describe why you are requesting a device reset (e.g. Changed phone, Lost phone):");
-      if (reason === null) return;
+    resetReqBtn.addEventListener('click', () => { if (resetModal) resetModal.hidden = false; });
+  }
+  document.getElementById('device-reset-close')?.addEventListener('click', closeResetModal);
+  document.getElementById('device-reset-cancel')?.addEventListener('click', closeResetModal);
+  resetModal?.addEventListener('click', (event) => { if (event.target === resetModal) closeResetModal(); });
+  if (resetForm && !resetForm.dataset.bound) {
+    resetForm.dataset.bound = 'true';
+    resetForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const reason = document.getElementById('device-reset-reason').value.trim();
+      if (!reason) return;
       try {
-        await api('/api/student/request-device-reset', {
-          method: 'POST',
-          body: JSON.stringify({ reason: reason || 'Lost or replaced phone' })
-        });
-        toast('Device reset request submitted! Your manager has been notified.', 'ok');
+        await api('/api/student/request-device-reset', { method: 'POST', body: JSON.stringify({ reason }) });
+        closeResetModal();
+        toast('Device reset request submitted. Your manager has been notified.', 'ok');
         setTimeout(() => location.reload(), 1500);
-      } catch (e) {
-        toast(e.message, 'error');
-      }
+      } catch (e) { toast(e.message, 'error'); }
     });
   }
 }

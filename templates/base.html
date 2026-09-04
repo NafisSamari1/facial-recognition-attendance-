@@ -23,7 +23,7 @@
           </div>
         </div>
         <nav class="nav">
-          <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' else '' }}" href="/">Dashboard</a>
+          <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' else '' }}" href="/">{% if session.get('role') == 'student' %}Home{% else %}Dashboard{% endif %}</a>
           {% if session.get('role') == 'manager' %}
             <a class="nav-link {{ 'active' if request.endpoint == 'register_page' else '' }}" href="/register">Register</a>
             <a class="nav-link {{ 'active' if request.endpoint == 'reports_page' else '' }}" href="/reports">Reports</a>
@@ -44,7 +44,9 @@
             {% endif %}
           </div>
           <div class="sidebar-actions">
+            {% if session.get('role') != 'student' %}
             <button class="icon-button" type="button" data-settings-trigger>Settings</button>
+            {% endif %}
             <a class="btn btn-ghost btn-sm" href="{{ url_for('logout') }}">Logout</a>
           </div>
           <p class="foot-note">Webcam-based student attendance with a local recognition workflow.</p>
@@ -98,7 +100,7 @@
             <div class="settings-section__label">Navigation</div>
             {% if session.get('role') == 'student' %}
               <a class="settings-option" href="{{ url_for('dashboard') }}">
-                <span>Dashboard</span>
+                <span>Home</span>
                 <span>→</span>
               </a>
               <a class="settings-option" href="{{ url_for('attendance_page') }}">
@@ -110,7 +112,7 @@
                 <span>→</span>
               </a>
               <a class="settings-option" href="{{ url_for('reports_page') }}">
-                <span>My Attendance</span>
+                <span>My Reports</span>
                 <span>→</span>
               </a>
             {% else %}
@@ -193,7 +195,9 @@
         <a class="mobile-nav-link {{ 'active' if request.endpoint == 'discover_page' else '' }}" href="/discover"><span>Discover</span></a>
         <a class="mobile-nav-link {{ 'active' if request.endpoint == 'reports_page' else '' }}" href="/reports"><span>My Reports</span></a>
       {% endif %}
-      <button class="mobile-nav-link" type="button" data-settings-trigger><span>Settings</span></button>
+      {% if session.get('role') != 'student' %}
+        <button class="mobile-nav-link" type="button" data-settings-trigger><span>Settings</span></button>
+      {% endif %}
     </nav>
 
 

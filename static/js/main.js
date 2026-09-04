@@ -37,11 +37,13 @@ function getDeviceName() {
   else if (ua.includes("Safari")) browser = "Safari";
 
   let os = "Device";
-  if (ua.includes("Win")) os = "Windows";
-  else if (ua.includes("Android")) os = "Android";
-  else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
-  else if (ua.includes("Mac")) os = "Macintosh";
-  else if (ua.includes("Linux")) os = "Linux";
+  if (ua.includes("Win")) os = "Windows PC";
+  else if (ua.includes("Android")) {
+    os = (ua.match(/Android[^;)]*;\s*(?:wv;\s*)?([^;)]+?)(?:\s+Build\/[^;)]+)?[;)]/) || [])[1]?.trim() || "Android device";
+  } else if (ua.includes("iPhone")) os = "iPhone";
+  else if (ua.includes("iPad")) os = "iPad";
+  else if (ua.includes("Mac")) os = "Mac";
+  else if (ua.includes("Linux")) os = "Linux device";
 
   return `${browser} on ${os}`;
 }

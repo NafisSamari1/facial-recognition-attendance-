@@ -116,18 +116,17 @@ def train_model():
     student_dirs = sorted([p for p in FACES_DIR.iterdir() if p.is_dir()])
     if not student_dirs:
         return {"ok": False, "error": "No face samples available"}
-    for student_dir in student_dirs:
-        student_id = student_dir.name
+    for label, student_dir in enumerate(student_dirs):
         for sample_path in sorted(student_dir.glob("*.jpg")):
             image = cv2.imread(str(sample_path), cv2.IMREAD_GRAYSCALE)
             if image is None:
                 continue
             faces.append(image)
-            labels.append(student_id)
+            labels.append(label)
     if len(faces) < 2:
         return {"ok": False, "error": "At least two face samples are required to train the model"}
     recognizer = cv2.face.LBPHFaceRecognizer_create()
-    recognizer.train(faces, np.array(labels, dtype=object))
+    recognizer.train(faces, np.array(labels, dtype=np.int32))
     recognizer.write(str(MODEL_PATH))
     return {"ok": True, "trained": True, "samples": len(faces)}
 
@@ -149,13 +148,15 @@ def recognize(frame_data):
     recognizer = cv2.face.LBPHFaceRecognizer_create()
     recognizer.read(str(MODEL_PATH))
     label, distance = recognizer.predict(face)
+    student_dirs = sorted([p for p in FACES_DIR.iterdir() if p.is_dir()])
+    student_id = student_dirs[label].name if 0 <= label < len(student_dirs) else None
     confidence = max(0.0, 100.0 - float(distance))
     matched = confidence >= CONFIDENCE_ACCEPT_THRESHOLD
     return {
         "face_found": True,
         "matched": matched,
         "confidence": round(confidence, 1),
-        "student_id": str(label),
+        "student_id": student_id,
         "reason": "matched" if matched else "low-confidence",
     }
 

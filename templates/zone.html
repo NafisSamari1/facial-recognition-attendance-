@@ -75,6 +75,7 @@
           <button class="btn btn-ghost" id="use-my-gps-btn" type="button">Use My Current GPS Location</button>
           <button class="btn btn-primary" type="submit">Save Area Zone</button>
         </div>
+        <button class="btn btn-ghost btn-sm mt-12" id="clear-zone-btn" type="button">Clear active zone</button>
       </form>
     </div>
 
@@ -171,14 +172,11 @@ async function loadCurrentZone() {
       document.getElementById('zone-status-chip').innerHTML = '<span class="dot dot-live"></span>Active Zone Set';
       initMap(res.zone.lat, res.zone.lng, res.zone.radius_meters);
     } else {
-      const defaultLat = 6.6731, defaultLng = -1.5670, defaultRadius = 100;
-      document.getElementById('zone-lat').value = defaultLat;
-      document.getElementById('zone-lng').value = defaultLng;
       document.getElementById('zone-status-chip').innerHTML = '<span class="dot"></span>Not Set';
-      initMap(defaultLat, defaultLng, defaultRadius);
+      initMap(0, 0, 100);
     }
   } catch (e) {
-    initMap(6.6731, -1.5670, 100);
+    document.getElementById('zone-status-chip').innerHTML = '<span class="dot"></span>Unavailable';
   }
 }
 
@@ -322,6 +320,18 @@ function setupFormHandlers() {
       }, () => {
         toast('GPS access denied.', 'error');
       }, { enableHighAccuracy: true });
+    });
+  }
+
+  const clearZoneBtn = document.getElementById('clear-zone-btn');
+  if (clearZoneBtn) {
+    clearZoneBtn.addEventListener('click', async () => {
+      if (!confirm('Clear the active attendance zone?')) return;
+      try {
+        await api('/api/zone', { method: 'DELETE' });
+        toast('Active attendance zone cleared.');
+        location.reload();
+      } catch (err) { toast(err.message, 'error'); }
     });
   }
 
