@@ -518,6 +518,19 @@ def api_zone_check():
     lng = payload.get("lng")
     if lat is None or lng is None:
         return jsonify({"ok": False, "error": "Latitude and longitude required"}), 400
+    student_course = None
+    if session.get("role") == "student":
+        student = db.get_student(session.get("student_id"))
+        student_course = student.get("course") if student else session.get("course")
+    if not db.get_active_session(course=student_course):
+        return jsonify({
+            "ok": True,
+            "allowed": True,
+            "distance_meters": 0.0,
+            "radius_meters": 0.0,
+            "zone_name": "No Active Session",
+            "message": "No active attendance session. GPS will be checked when the manager opens attendance.",
+        })
     res = face_utils.check_allowed_area(lat, lng)
     return jsonify(res)
 
@@ -526,7 +539,8 @@ def api_zone_check():
 def api_active_session():
     course = request.args.get("course") or None
     if session.get("role") == "student" and not course:
-        course = session.get("course")
+        student = db.get_student(session.get("student_id"))
+        course = student.get("course") if student else session.get("course")
     session_data = db.get_active_session(course)
     zone_data = db.get_active_zone()
     return jsonify({"ok": True, "session": session_data, "zone": zone_data})
