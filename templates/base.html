@@ -202,9 +202,6 @@
         <a class="mobile-nav-link {{ 'active' if request.endpoint == 'discover_page' else '' }}" href="/discover"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m15.5 8.5-2.2 4.8-4.8 2.2 2.2-4.8 4.8-2.2Z"></path></svg><span>Discover</span></a>
         <a class="mobile-nav-link {{ 'active' if request.endpoint == 'reports_page' else '' }}" href="/reports"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7M3 20h18"></path></svg><span>My Reports</span></a>
       {% endif %}
-      {% if session.get('role') != 'student' %}
-        <button class="mobile-nav-link" type="button" data-settings-trigger><span>Settings</span></button>
-      {% endif %}
     </nav>
 
 
