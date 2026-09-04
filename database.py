@@ -570,7 +570,8 @@ def get_active_session(course=None):
             conn,
             """
             SELECT * FROM attendance_sessions
-            WHERE status = 'active' AND end_time >= ? AND (course = ? OR course = 'ALL')
+                        WHERE status = 'active' AND end_time >= ?
+                            AND (UPPER(TRIM(course)) = UPPER(TRIM(?)) OR UPPER(TRIM(course)) = 'ALL')
             ORDER BY id DESC LIMIT 1
             """,
             (now_iso, course),

@@ -149,6 +149,7 @@ window.addEventListener('DOMContentLoaded', () => {
 async function api(path, options = {}) {
   const res = await fetch(path, {
     headers: { 'Content-Type': 'application/json' },
+    cache: 'no-store',
     ...options,
   });
   let data = null;
