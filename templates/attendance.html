@@ -65,6 +65,7 @@ let currentLocation = null;
 let activeSessionData = null;
 let isZoneValid = false;
 let sessionTimerInterval = null;
+let sessionPollInterval = null;
 
 async function initCamera() {
   const video = document.getElementById('video');
@@ -114,6 +115,7 @@ async function checkSessionAndZone() {
       sessionTimerInterval = setInterval(updateCountdown, 1000);
     } else {
       activeSessionData = null;
+      if (sessionTimerInterval) clearInterval(sessionTimerInterval);
       card.style.borderLeft = '4px solid #e74c3c';
       eyebrow.textContent = '🔴 ATTENDANCE WINDOW CLOSED';
       title.textContent = 'No Active Attendance Signal';
@@ -252,6 +254,7 @@ const bannerGpsBtn = document.getElementById('refresh-gps-banner-btn');
 if (bannerGpsBtn) bannerGpsBtn.addEventListener('click', getLocation);
 
 checkSessionAndZone();
+sessionPollInterval = setInterval(checkSessionAndZone, 5000);
 getLocation();
 initCamera().catch(() => toast('Camera unavailable. Please allow camera access.', 'error'));
 </script>
