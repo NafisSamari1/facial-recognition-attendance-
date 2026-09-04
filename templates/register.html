@@ -201,20 +201,11 @@ async function removeCourse(courseName) {
 async function loadRoster() {
   const container = document.getElementById('roster-container');
   try {
-    const res = await fetch('/students');
-    const text = await res.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, 'text/html');
-    const grid = doc.querySelector('.students-grid');
-    const empty = doc.querySelector('.empty-state');
-
-    if (grid) {
-      container.innerHTML = grid.outerHTML;
-    } else if (empty) {
-      container.innerHTML = empty.outerHTML;
-    } else {
-      container.innerHTML = '<div class="empty-state">No students registered yet.</div>';
-    }
+    const res = await api('/api/students');
+    const students = res.students || [];
+    container.innerHTML = students.length
+      ? `<div class="roster-list">${students.map((student) => `<div class="hint-pill"><strong>${escapeHtml(student.full_name)}</strong> · ${escapeHtml(student.student_id)} · ${escapeHtml(student.course)}</div>`).join('')}</div>`
+      : '<div class="empty-state">No students registered yet.</div>';
   } catch (e) {
     container.innerHTML = '<div class="empty-state">Could not load roster.</div>';
   }

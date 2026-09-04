@@ -379,7 +379,7 @@ async function refreshStudentSignal() {
     if (!title || !badge || !timer || !link) return;
     if (session) {
       title.textContent = session.title || `${session.course} attendance is open`;
-      sub.textContent = 'Your manager has opened attendance for your course.';
+      sub.textContent = `Your manager has opened attendance for your course at ${res.zone?.name || 'the saved attendance zone'}.`;
       badge.innerHTML = '<span class="dot dot-live"></span>Open';
       timer.textContent = `${Math.floor(session.seconds_remaining / 60).toString().padStart(2, '0')}:${(session.seconds_remaining % 60).toString().padStart(2, '0')}`;
       link.hidden = false;

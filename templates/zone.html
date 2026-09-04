@@ -297,8 +297,8 @@ function setupFormHandlers() {
           method: 'POST',
           body: JSON.stringify({ name, lat, lng, radius_meters: radius })
         });
-        toast('Area Zone saved successfully!');
-        document.getElementById('zone-status-chip').innerHTML = '<span class="dot dot-live"></span>Active Zone Set';
+        toast(`Area zone "${name}" saved successfully. You can now open attendance.`);
+        document.getElementById('zone-status-chip').innerHTML = `<span class="dot dot-live"></span>${name}`;
         updatePositionInputs(lat, lng);
       } catch (err) {
         toast(err.message, 'error');
@@ -356,11 +356,12 @@ function setupFormHandlers() {
       e.preventDefault();
       const course = document.getElementById('zone-session-course').value;
       const duration = parseInt(document.getElementById('zone-session-duration').value);
+      const zoneName = document.getElementById('zone-name').value.trim();
 
       try {
         const res = await api('/api/sessions/start', {
           method: 'POST',
-          body: JSON.stringify({ course, duration_minutes: duration })
+          body: JSON.stringify({ course, duration_minutes: duration, title: `${course === 'ALL' ? 'General' : course} Attendance - ${zoneName || 'Current Zone'}` })
         });
         toast(`Attendance session broadcasted for ${duration} mins!`);
         renderSessionBanner(res.session);
