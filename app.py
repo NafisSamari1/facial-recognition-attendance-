@@ -538,7 +538,6 @@ def api_start_session():
     payload = request.get_json(force=True)
     course = (payload.get("course") or "").strip()
     duration_value = payload.get("duration_minutes")
-    title = (payload.get("title") or "").strip()
     latitude = payload.get("latitude")
     longitude = payload.get("longitude")
     radius = payload.get("radius_meters")
@@ -560,9 +559,7 @@ def api_start_session():
         return jsonify({"ok": False, "error": "Enter valid latitude, longitude, and radius values."}), 400
 
     zone = db.set_active_zone(latitude, longitude, radius)
-    title = title or "Area Zone Broadcast Attendance Session"
-    
-    sess = db.create_session(course, duration, title)
+    sess = db.create_session(course, duration, "Area Zone Broadcast Attendance Session")
     return jsonify({"ok": True, "session": sess, "zone": zone})
 
 
