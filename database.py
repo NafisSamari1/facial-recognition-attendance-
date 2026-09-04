@@ -489,7 +489,7 @@ def clear_active_zone():
     conn.close()
 
 
-def set_active_zone(lat, lng, radius_meters=100.0, name="Lecture Hall Zone"):
+def set_active_zone(lat, lng, radius_meters, name=""):
     conn = get_connection()
     _execute(conn, "DELETE FROM zone_settings")
     _execute(

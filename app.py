@@ -496,9 +496,9 @@ def api_zone():
         lat = payload.get("lat")
         lng = payload.get("lng")
         radius = payload.get("radius_meters")
-        name = (payload.get("name") or "").strip()
-        if lat is None or lng is None or radius is None or not name:
-            return jsonify({"ok": False, "error": "Zone name, latitude, longitude, and radius are required."}), 400
+        name = ""
+        if lat is None or lng is None or radius is None:
+            return jsonify({"ok": False, "error": "Latitude, longitude, and radius are required."}), 400
         try:
             if float(radius) <= 0:
                 raise ValueError
@@ -539,23 +539,31 @@ def api_start_session():
     course = (payload.get("course") or "").strip()
     duration_value = payload.get("duration_minutes")
     title = (payload.get("title") or "").strip()
-    if not course or duration_value is None:
-        return jsonify({"ok": False, "error": "Course and attendance duration are required."}), 400
+    latitude = payload.get("latitude")
+    longitude = payload.get("longitude")
+    radius = payload.get("radius_meters")
+    if not course or duration_value is None or latitude is None or longitude is None or radius is None:
+        return jsonify({"ok": False, "error": "Course, duration, latitude, longitude, and radius are required."}), 400
     try:
         duration = int(duration_value)
         if duration < 1:
             raise ValueError
     except (TypeError, ValueError):
         return jsonify({"ok": False, "error": "Attendance duration must be at least one minute."}), 400
-    if not title:
-        title = f"{course} Attendance Session"
+    try:
+        latitude = float(latitude)
+        longitude = float(longitude)
+        radius = float(radius)
+        if not -90 <= latitude <= 90 or not -180 <= longitude <= 180 or radius <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "Enter valid latitude, longitude, and radius values."}), 400
 
-    zone = db.get_active_zone()
-    if not zone:
-        return jsonify({"ok": False, "error": "Save an attendance area zone before opening the attendance window."}), 400
+    zone = db.set_active_zone(latitude, longitude, radius)
+    title = title or "Area Zone Broadcast Attendance Session"
     
     sess = db.create_session(course, duration, title)
-    return jsonify({"ok": True, "session": sess})
+    return jsonify({"ok": True, "session": sess, "zone": zone})
 
 
 @app.route("/api/sessions/end", methods=["POST"])

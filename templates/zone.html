@@ -47,11 +47,6 @@
       </div>
 
       <form id="area-zone-broadcast-form">
-        <div class="field mb-16">
-          <label for="zone-name" style="display:block; margin-bottom:6px; font-weight:600;">Zone Name / Description</label>
-          <input id="zone-name" placeholder="Enter the attendance area name" required style="width:100%; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
-        </div>
-
         <div class="grid grid-2 gap-12">
           <div class="field">
             <label for="zone-lat" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Center Latitude</label>
@@ -73,12 +68,11 @@
 
         <div class="flex-between mt-20 gap-12">
           <button class="btn btn-ghost" id="use-my-gps-btn" type="button">Use My Current GPS Location</button>
-          <button class="btn btn-primary" type="submit">Broadcast Area Zone Attendance Session</button>
+          <button class="btn btn-primary" type="submit">Open Attendance Window</button>
         </div>
         <div id="combined-session-status" class="hint-pill mt-12" hidden></div>
-        <button class="btn btn-ghost btn-sm mt-12" id="clear-zone-btn" type="button">Clear active zone</button>
         <div class="session-fields mt-24">
-          <h3 class="section-title">Session details</h3>
+          <h3 class="section-title">Attendance session details</h3>
           <div class="grid grid-2 gap-12 mt-12">
             <div class="field">
               <label for="zone-session-course">Target Course</label>
@@ -112,7 +106,6 @@ let sessionInterval = null;
 async function initZonePage() {
   setupRadiusSlider();
   setupLocationSearch();
-  await loadCurrentZone();
   await loadActiveSession();
   setupFormHandlers();
 }
@@ -135,12 +128,11 @@ async function loadCurrentZone() {
   try {
     const res = await api('/api/zone');
     if (res.ok && res.zone) {
-      document.getElementById('zone-name').value = res.zone.name || '';
       document.getElementById('zone-lat').value = res.zone.lat.toFixed(6);
       document.getElementById('zone-lng').value = res.zone.lng.toFixed(6);
       document.getElementById('zone-radius').value = res.zone.radius_meters || '';
       document.getElementById('radius-val-disp').textContent = res.zone.radius_meters ? `${res.zone.radius_meters} meters` : 'Enter radius';
-      document.getElementById('zone-status-chip').innerHTML = `<span class="dot dot-live"></span>${res.zone.name || 'Active zone'}`;
+      document.getElementById('zone-status-chip').innerHTML = '<span class="dot dot-live"></span>Location ready';
       initMap(res.zone.lat, res.zone.lng, res.zone.radius_meters);
     } else {
       document.getElementById('zone-status-chip').innerHTML = '<span class="dot"></span>Not Set';
@@ -182,7 +174,7 @@ function initMap(lat, lng, radius) {
       color: '#2f8c5e',
       fillColor: '#2f8c5e',
       fillOpacity: 0.25,
-      radius: parseFloat(radius) || 100
+      radius: parseFloat(radius)
     }).addTo(zoneMap);
   } else {
     container.innerHTML = `<div style="padding:40px; text-align:center; color:#7d8a7a;">Map preview centered at Lat ${lat}, Lng ${lng} (${radius}m radius)</div>`;
@@ -221,9 +213,8 @@ function setupLocationSearch() {
           el.addEventListener('click', () => {
             const loc = res.results[index];
             updatePositionInputs(loc.lat, loc.lng);
-            document.getElementById('zone-name').value = loc.display_name.split(',')[0];
             dropdown.style.display = 'none';
-            toast(`Moved zone to: ${loc.display_name.split(',')[0]}`);
+            toast('Attendance location updated from search.');
           });
         });
       } else {
@@ -253,53 +244,39 @@ function setupLocationSearch() {
 }
 
 function setupFormHandlers() {
-  async function saveZone() {
-    const name = document.getElementById('zone-name').value.trim();
-    const lat = parseFloat(document.getElementById('zone-lat').value);
-    const lng = parseFloat(document.getElementById('zone-lng').value);
-    const radius = parseFloat(document.getElementById('zone-radius').value);
-    if (!name || !Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(radius)) {
-      throw new Error('Enter a zone name, latitude, longitude, and radius first.');
-    }
-    const res = await api('/api/zone', {
-      method: 'POST',
-      body: JSON.stringify({ name, lat, lng, radius_meters: radius })
-    });
-    document.getElementById('zone-name').value = res.zone.name;
-    document.getElementById('zone-lat').value = Number(res.zone.lat).toFixed(6);
-    document.getElementById('zone-lng').value = Number(res.zone.lng).toFixed(6);
-    document.getElementById('zone-radius').value = res.zone.radius_meters;
-    document.getElementById('radius-val-disp').textContent = `${res.zone.radius_meters} meters`;
-    document.getElementById('zone-status-chip').innerHTML = `<span class="dot dot-live"></span>${res.zone.name}`;
-    updatePositionInputs(res.zone.lat, res.zone.lng);
-    if (zoneCircle) zoneCircle.setRadius(Number(res.zone.radius_meters));
-    return res.zone;
-  }
-
   const form = document.getElementById('area-zone-broadcast-form');
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const latitude = parseFloat(document.getElementById('zone-lat').value);
+      const longitude = parseFloat(document.getElementById('zone-lng').value);
+      const radius = parseFloat(document.getElementById('zone-radius').value);
+      const course = document.getElementById('zone-session-course').value;
+      const duration = parseInt(document.getElementById('zone-session-duration').value, 10);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !Number.isFinite(radius) || !course || !Number.isInteger(duration)) {
+        toast('Enter the location, radius, course, and duration before opening attendance.', 'error');
+        return;
+      }
       try {
-        const course = document.getElementById('zone-session-course').value;
-        const duration = parseInt(document.getElementById('zone-session-duration').value, 10);
-        if (!course || !Number.isInteger(duration) || duration < 1) {
-          throw new Error('Select a course and enter the attendance duration.');
-        }
-        const zone = await saveZone();
         const res = await api('/api/sessions/start', {
           method: 'POST',
-          body: JSON.stringify({ course, duration_minutes: duration, title: `${course === 'ALL' ? 'General' : course} Attendance - ${zone.name}` })
+          body: JSON.stringify({ latitude, longitude, radius_meters: radius, course, duration_minutes: duration })
         });
+        document.getElementById('zone-status-chip').innerHTML = '<span class="dot dot-live"></span>Location ready';
         const status = document.getElementById('combined-session-status');
-        status.textContent = `Attendance in progress at ${zone.name} for ${duration} minutes.`;
+        status.textContent = `Attendance in progress for ${course} within a ${radius}m radius.`;
         status.hidden = false;
-        toast(`Attendance in progress at ${zone.name} for ${duration} minutes.`);
+        toast('Attendance prompt sent to registered students.', 'ok');
         renderSessionBanner(res.session);
-      } catch (err) {
-        toast(err.message, 'error');
-      }
+      } catch (err) { toast(err.message, 'error'); }
     });
+  }
+
+  /* Coordinates are updated by the map, search, or the device GPS button. */
+  function updateZoneMapInputs() {
+    const lat = parseFloat(document.getElementById('zone-lat').value);
+    const lng = parseFloat(document.getElementById('zone-lng').value);
+    return Number.isFinite(lat) && Number.isFinite(lng);
   }
 
   const gpsBtn = document.getElementById('use-my-gps-btn');
@@ -316,18 +293,6 @@ function setupFormHandlers() {
       }, () => {
         toast('GPS access denied.', 'error');
       }, { enableHighAccuracy: true });
-    });
-  }
-
-  const clearZoneBtn = document.getElementById('clear-zone-btn');
-  if (clearZoneBtn) {
-    clearZoneBtn.addEventListener('click', async () => {
-      if (!confirm('Clear the active attendance zone?')) return;
-      try {
-        await api('/api/zone', { method: 'DELETE' });
-        toast('Active attendance zone cleared.');
-        location.reload();
-      } catch (err) { toast(err.message, 'error'); }
     });
   }
 
