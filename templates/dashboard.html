@@ -213,7 +213,7 @@
       </div>
 
       <form id="session-form">
-        <div class="grid grid-3 gap-12">
+        <div class="grid grid-2 gap-12">
           <div class="field">
             <label for="session-course" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Target Course / Group</label>
             <select id="session-course" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
@@ -231,10 +231,6 @@
               <option value="30">30 Minutes</option>
               <option value="60">60 Minutes</option>
             </select>
-          </div>
-          <div class="field">
-            <label for="session-name" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Session Title</label>
-            <input id="session-name" placeholder="e.g. Morning Roll Call" style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
           </div>
         </div>
         <div class="mt-16">
@@ -263,12 +259,7 @@
       <div id="dashboard-zone-map" style="height: 280px; border-radius:12px; border:1px solid var(--border); background:#0f1720;"></div>
       <div id="dash-zone-details" class="hint-pill mt-12">Checking active area zone details...</div>
 
-      <form id="zone-form" class="mt-16">
-        <div class="field mb-16">
-          <label for="zone-name" style="display:block; margin-bottom:6px; font-weight:600;">Zone Name / Description</label>
-          <input id="zone-name" placeholder="e.g. Main Science Auditorium" required style="width:100%; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
-        </div>
-
+      <div class="mt-16">
         <div class="grid grid-2 gap-12">
           <div class="field">
             <label for="zone-lat" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Center Latitude</label>
@@ -288,11 +279,10 @@
           <input id="zone-radius" type="range" min="10" max="2000" step="10" value="100" style="width:100%;">
         </div>
 
-        <div class="flex-between mt-20 gap-12">
+        <div class="mt-20">
           <button class="btn btn-ghost" id="get-manager-location-btn" type="button">Use My Current GPS Location</button>
-          <button class="btn btn-primary" type="submit">Save Area Zone</button>
         </div>
-      </form>
+      </div>
     </div>
 
     <div class="grid grid-2">
@@ -557,7 +547,6 @@ async function loadManagerDashboard() {
     }
     if (active.ok && active.zone) {
       const z = active.zone;
-      if (document.getElementById('zone-name')) document.getElementById('zone-name').value = z.name || '';
       if (document.getElementById('zone-lat')) document.getElementById('zone-lat').value = z.lat;
       if (document.getElementById('zone-lng')) document.getElementById('zone-lng').value = z.lng;
       if (document.getElementById('zone-radius')) {
@@ -755,7 +744,6 @@ function setupDashboardLocationSearch() {
           el.addEventListener('click', () => {
             const loc = res.results[index];
             updateDashboardZoneInputs(loc.lat, loc.lng);
-            document.getElementById('zone-name').value = loc.display_name.split(',')[0];
             dropdown.style.display = 'none';
             toast(`Moved zone to: ${loc.display_name.split(',')[0]}`);
           });
@@ -821,30 +809,6 @@ function setupManagerControls() {
     initDashboardZoneMap(parseFloat(document.getElementById('zone-lat').value || defaultLat), parseFloat(document.getElementById('zone-lng').value || defaultLng), parseFloat(document.getElementById('zone-radius').value || defaultRadius));
   }
 
-  const zoneForm = document.getElementById('zone-form');
-  if (zoneForm && !zoneForm.dataset.bound) {
-    zoneForm.dataset.bound = 'true';
-    zoneForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const lat = parseFloat(document.getElementById('zone-lat').value);
-      const lng = parseFloat(document.getElementById('zone-lng').value);
-      const radius = parseFloat(document.getElementById('zone-radius').value);
-      const name = document.getElementById('zone-name').value;
-
-      try {
-        await api('/api/zone', {
-          method: 'POST',
-          body: JSON.stringify({ lat, lng, radius_meters: radius, name })
-        });
-        toast('Area Zone saved successfully!');
-        updateMap('dashboard-zone-map', lat, lng, radius);
-        if (document.getElementById('zone-chip')) document.getElementById('zone-chip').innerHTML = '<span class="dot dot-live"></span>Active Zone';
-      } catch (err) {
-        toast(err.message, 'error');
-      }
-    });
-  }
-
   const gpsBtn = document.getElementById('get-manager-location-btn');
   if (gpsBtn && !gpsBtn.dataset.bound) {
     gpsBtn.dataset.bound = 'true';
@@ -871,12 +835,25 @@ function setupManagerControls() {
       e.preventDefault();
       const course = document.getElementById('session-course').value;
       const duration = parseInt(document.getElementById('session-duration').value);
-      const title = document.getElementById('session-name').value;
+      const latitude = parseFloat(document.getElementById('zone-lat').value);
+      const longitude = parseFloat(document.getElementById('zone-lng').value);
+      const radius = parseFloat(document.getElementById('zone-radius').value);
+
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !Number.isFinite(radius)) {
+        toast('Set the attendance area location and radius before opening attendance.', 'error');
+        return;
+      }
 
       try {
         const res = await api('/api/sessions/start', {
           method: 'POST',
-          body: JSON.stringify({ course, duration_minutes: duration, title })
+          body: JSON.stringify({
+            course,
+            duration_minutes: duration,
+            latitude,
+            longitude,
+            radius_meters: radius
+          })
         });
         toast(`Attendance signal broadcasted for ${duration} mins!`);
         if (res.session) renderActiveSessionBanner(res.session);
