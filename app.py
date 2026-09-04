@@ -330,6 +330,13 @@ def api_create_student():
     return jsonify({"ok": True, "device_id": device_id})
 
 
+@app.route("/api/students", methods=["GET"])
+def api_list_students():
+    if not is_manager():
+        return jsonify({"ok": False, "error": "Manager access required"}), 403
+    return jsonify({"ok": True, "students": db.list_students()})
+
+
 @app.route("/api/capture-sample", methods=["POST"])
 def api_capture_sample():
     payload = request.get_json(force=True)
@@ -527,6 +534,10 @@ def api_start_session():
     course = (payload.get("course") or "ALL").strip()
     duration = int(payload.get("duration_minutes", 15))
     title = (payload.get("title") or f"{course} Attendance Window").strip()
+
+    zone = db.get_active_zone()
+    if not zone:
+        return jsonify({"ok": False, "error": "Save an attendance area zone before opening the attendance window."}), 400
     
     sess = db.create_session(course, duration, title)
     return jsonify({"ok": True, "session": sess})
