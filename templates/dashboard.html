@@ -559,7 +559,6 @@ async function loadManagerDashboard() {
           <strong>Attendance Area:</strong> Center: Lat ${z.lat.toFixed(6)}, Lng ${z.lng.toFixed(6)} | Radius: ${z.radius_meters}m
         `;
       }
-      updateMap('dashboard-zone-map', z.lat, z.lng, z.radius_meters);
       initDashboardZoneMap(z.lat, z.lng, z.radius_meters);
       if (document.getElementById('zone-chip')) document.getElementById('zone-chip').innerHTML = '<span class="dot dot-live"></span>Active Zone';
     } else if (document.getElementById('dash-zone-details')) {
@@ -821,7 +820,6 @@ function setupManagerControls() {
       navigator.geolocation.getCurrentPosition((pos) => {
         updateDashboardZoneInputs(pos.coords.latitude, pos.coords.longitude);
         toast('Current GPS coordinates applied!');
-        updateMap('dashboard-zone-map', pos.coords.latitude, pos.coords.longitude, document.getElementById('zone-radius').value);
       }, (err) => {
         toast('Location access denied or unavailable', 'error');
       }, { enableHighAccuracy: true });
