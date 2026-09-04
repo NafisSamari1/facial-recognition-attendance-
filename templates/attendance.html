@@ -84,8 +84,8 @@ async function checkSessionAndZone() {
     if (res.ok && res.session) {
       activeSessionData = res.session;
       card.style.borderLeft = '4px solid #2f8c5e';
-      eyebrow.textContent = '🟢 ACTIVE ATTENDANCE SIGNAL';
-      title.textContent = res.session.title || `${res.session.course} Session`;
+      eyebrow.textContent = '🟢 ATTENDANCE IN PROGRESS';
+      title.textContent = 'Attendance in progress';
       sub.textContent = `Attendance window active for ${res.session.course}. Verify your GPS location to scan.`;
       badge.innerHTML = '<span class="dot dot-live"></span>Window Open';
 

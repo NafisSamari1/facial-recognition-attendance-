@@ -491,6 +491,7 @@ def clear_active_zone():
 
 def set_active_zone(lat, lng, radius_meters=100.0, name="Lecture Hall Zone"):
     conn = get_connection()
+    _execute(conn, "DELETE FROM zone_settings")
     _execute(
         conn,
         "INSERT INTO zone_settings (lat, lng, radius_meters, name, updated_at) VALUES (?, ?, ?, ?, ?)",

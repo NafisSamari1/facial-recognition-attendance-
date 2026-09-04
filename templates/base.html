@@ -26,6 +26,7 @@
           <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' else '' }}" href="/">{% if session.get('role') == 'student' %}Home{% else %}Dashboard{% endif %}</a>
           {% if session.get('role') == 'manager' %}
             <a class="nav-link {{ 'active' if request.endpoint == 'register_page' else '' }}" href="/register">Register</a>
+            <a class="nav-link {{ 'active' if request.endpoint == 'students_page' else '' }}" href="/students">Students</a>
             <a class="nav-link {{ 'active' if request.endpoint == 'reports_page' else '' }}" href="/reports">Reports</a>
           {% elif session.get('role') == 'student' %}
             <a class="nav-link {{ 'active' if request.endpoint == 'attendance_page' else '' }}" href="/attendance">Attendance</a>
@@ -189,6 +190,7 @@
       <a class="mobile-nav-link {{ 'active' if request.endpoint == 'dashboard' else '' }}" href="/"><span>Home</span></a>
       {% if session.get('role') == 'manager' %}
         <a class="mobile-nav-link {{ 'active' if request.endpoint == 'register_page' else '' }}" href="/register"><span>Register</span></a>
+        <a class="mobile-nav-link {{ 'active' if request.endpoint == 'students_page' else '' }}" href="/students"><span>Students</span></a>
         <a class="mobile-nav-link {{ 'active' if request.endpoint == 'reports_page' else '' }}" href="/reports"><span>Reports</span></a>
       {% elif session.get('role') == 'student' %}
         <a class="mobile-nav-link {{ 'active' if request.endpoint == 'attendance_page' else '' }}" href="/attendance"><span>Attendance</span></a>

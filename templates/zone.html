@@ -123,7 +123,7 @@
         </div>
 
         <div class="mt-16">
-          <button class="btn btn-primary" type="submit" style="width:100%;">Open Attendance Window Now</button>
+          <button class="btn btn-primary" type="submit" style="width:100%;">Save Zone & Start Attendance</button>
         </div>
       </form>
     </div>
@@ -283,23 +283,36 @@ function setupLocationSearch() {
 }
 
 function setupFormHandlers() {
+  async function saveZone() {
+    const name = document.getElementById('zone-name').value.trim();
+    const lat = parseFloat(document.getElementById('zone-lat').value);
+    const lng = parseFloat(document.getElementById('zone-lng').value);
+    const radius = parseFloat(document.getElementById('zone-radius').value);
+    if (!name || !Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(radius)) {
+      throw new Error('Enter a zone name, latitude, longitude, and radius first.');
+    }
+    const res = await api('/api/zone', {
+      method: 'POST',
+      body: JSON.stringify({ name, lat, lng, radius_meters: radius })
+    });
+    document.getElementById('zone-name').value = res.zone.name;
+    document.getElementById('zone-lat').value = Number(res.zone.lat).toFixed(6);
+    document.getElementById('zone-lng').value = Number(res.zone.lng).toFixed(6);
+    document.getElementById('zone-radius').value = res.zone.radius_meters;
+    document.getElementById('radius-val-disp').textContent = `${res.zone.radius_meters} meters`;
+    document.getElementById('zone-status-chip').innerHTML = `<span class="dot dot-live"></span>${res.zone.name}`;
+    updatePositionInputs(res.zone.lat, res.zone.lng);
+    if (zoneCircle) zoneCircle.setRadius(Number(res.zone.radius_meters));
+    return res.zone;
+  }
+
   const form = document.getElementById('zone-setup-form');
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const name = document.getElementById('zone-name').value;
-      const lat = parseFloat(document.getElementById('zone-lat').value);
-      const lng = parseFloat(document.getElementById('zone-lng').value);
-      const radius = parseFloat(document.getElementById('zone-radius').value);
-
       try {
-        const res = await api('/api/zone', {
-          method: 'POST',
-          body: JSON.stringify({ name, lat, lng, radius_meters: radius })
-        });
-        toast(`Area zone "${name}" saved successfully. You can now open attendance.`);
-        document.getElementById('zone-status-chip').innerHTML = `<span class="dot dot-live"></span>${name}`;
-        updatePositionInputs(lat, lng);
+        const zone = await saveZone();
+        toast(`Area zone "${zone.name}" saved successfully.`);
       } catch (err) {
         toast(err.message, 'error');
       }
@@ -356,14 +369,14 @@ function setupFormHandlers() {
       e.preventDefault();
       const course = document.getElementById('zone-session-course').value;
       const duration = parseInt(document.getElementById('zone-session-duration').value);
-      const zoneName = document.getElementById('zone-name').value.trim();
 
       try {
+        const zone = await saveZone();
         const res = await api('/api/sessions/start', {
           method: 'POST',
-          body: JSON.stringify({ course, duration_minutes: duration, title: `${course === 'ALL' ? 'General' : course} Attendance - ${zoneName || 'Current Zone'}` })
+          body: JSON.stringify({ course, duration_minutes: duration, title: `${course === 'ALL' ? 'General' : course} Attendance - ${zone.name}` })
         });
-        toast(`Attendance session broadcasted for ${duration} mins!`);
+        toast(`Attendance in progress at ${zone.name} for ${duration} minutes.`);
         renderSessionBanner(res.session);
       } catch (err) {
         toast(err.message, 'error');
