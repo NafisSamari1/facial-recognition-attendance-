@@ -331,6 +331,13 @@ def assign_device(student_id, device_id, device_name=None):
     conn.close()
 
 
+def update_device_name(student_id, device_name):
+    conn = get_connection()
+    _execute(conn, "UPDATE students SET device_name = ? WHERE student_id = ?", (device_name, student_id))
+    conn.commit()
+    conn.close()
+
+
 def unbind_student_device(student_id):
     conn = get_connection()
     _execute(
@@ -473,6 +480,13 @@ def get_active_zone():
     row = _execute(conn, "SELECT * FROM zone_settings ORDER BY id DESC LIMIT 1").fetchone()
     conn.close()
     return _as_dict(row)
+
+
+def clear_active_zone():
+    conn = get_connection()
+    _execute(conn, "DELETE FROM zone_settings")
+    conn.commit()
+    conn.close()
 
 
 def set_active_zone(lat, lng, radius_meters=100.0, name="Lecture Hall Zone"):

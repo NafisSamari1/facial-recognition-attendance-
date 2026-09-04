@@ -50,7 +50,7 @@ MANAGER_API_ENDPOINTS = {
 @app.before_request
 def restrict_manager_access():
     # If the endpoint is restricted, check authentication and authorization
-    is_restricted_api = request.endpoint in MANAGER_API_ENDPOINTS or (request.endpoint == "api_zone" and request.method == "POST")
+    is_restricted_api = request.endpoint in MANAGER_API_ENDPOINTS or (request.endpoint == "api_zone" and request.method in {"POST", "DELETE"})
     is_restricted_page = request.endpoint in MANAGER_PAGES
 
     if is_restricted_page or is_restricted_api:
@@ -120,6 +120,8 @@ def login_page():
             # If student is unbound, bind this device to their account automatically
             if not student.get("device_id"):
                 db.assign_device(student_id, device_id, device_name)
+            elif device_name and device_name != student.get("device_name"):
+                db.update_device_name(student_id, device_name)
 
         session["logged_in"] = True
         session["role"] = "student"
@@ -477,8 +479,11 @@ def api_manager_unbind_device():
 
 
 
-@app.route("/api/zone", methods=["GET", "POST"])
+@app.route("/api/zone", methods=["GET", "POST", "DELETE"])
 def api_zone():
+    if request.method == "DELETE":
+        db.clear_active_zone()
+        return jsonify({"ok": True, "zone": None})
     if request.method == "POST":
         payload = request.get_json(force=True)
         lat = payload.get("lat")
