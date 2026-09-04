@@ -276,7 +276,7 @@
             <label for="zone-radius" style="font-weight:600;">Allowed Radius Boundary</label>
             <span id="radius-val-disp" class="mono" style="color:var(--accent); font-weight:700;">100 meters</span>
           </div>
-          <input id="zone-radius" type="range" min="10" max="2000" step="10" value="100" style="width:100%;">
+            <input id="zone-radius" type="number" min="1" max="2000" step="1" placeholder="Enter radius in meters" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
         </div>
 
         <div class="mt-20">
@@ -361,6 +361,8 @@ async function refreshStudentSignal() {
   try {
     const res = await api('/api/sessions/active');
     const session = res.session;
+    const card = document.getElementById('student-signal-card');
+    const eyebrow = document.getElementById('student-signal-eyebrow');
     const title = document.getElementById('student-signal-title');
     const sub = document.getElementById('student-signal-sub');
     const badge = document.getElementById('student-signal-badge');
@@ -368,12 +370,16 @@ async function refreshStudentSignal() {
     const link = document.getElementById('student-scan-link');
     if (!title || !badge || !timer || !link) return;
     if (session) {
+      if (card) card.style.borderLeft = '4px solid #2f8c5e';
+      if (eyebrow) eyebrow.textContent = 'ACTIVE ATTENDANCE SIGNAL';
       title.textContent = 'Attendance in progress';
       sub.textContent = 'Your manager has opened attendance for your course. You can now scan your face.';
       badge.innerHTML = '<span class="dot dot-live"></span>Open';
       timer.textContent = `${Math.floor(session.seconds_remaining / 60).toString().padStart(2, '0')}:${(session.seconds_remaining % 60).toString().padStart(2, '0')}`;
       link.hidden = false;
     } else {
+      if (card) card.style.borderLeft = '4px solid #e74c3c';
+      if (eyebrow) eyebrow.textContent = 'NO ACTIVE ATTENDANCE SIGNAL';
       title.textContent = 'No active attendance signal';
       sub.textContent = 'Your manager has not opened an attendance window yet.';
       badge.innerHTML = '<span class="dot"></span>Closed';
@@ -545,7 +551,7 @@ async function loadManagerDashboard() {
     if (active.ok && active.session) {
       renderActiveSessionBanner(active.session);
     }
-    if (active.ok && active.zone) {
+    if (active.ok && active.session && active.zone) {
       const z = active.zone;
       if (document.getElementById('zone-lat')) document.getElementById('zone-lat').value = z.lat;
       if (document.getElementById('zone-lng')) document.getElementById('zone-lng').value = z.lng;
@@ -561,8 +567,18 @@ async function loadManagerDashboard() {
       }
       initDashboardZoneMap(z.lat, z.lng, z.radius_meters);
       if (document.getElementById('zone-chip')) document.getElementById('zone-chip').innerHTML = '<span class="dot dot-live"></span>Active Zone';
-    } else if (document.getElementById('dash-zone-details')) {
-      document.getElementById('dash-zone-details').textContent = 'No active area zone configured by manager.';
+    } else {
+      const latInput = document.getElementById('zone-lat');
+      const lngInput = document.getElementById('zone-lng');
+      const radiusInput = document.getElementById('zone-radius');
+      const radiusDisp = document.getElementById('radius-val-disp');
+      if (latInput) latInput.value = '';
+      if (lngInput) lngInput.value = '';
+      if (radiusInput) radiusInput.value = '';
+      if (radiusDisp) radiusDisp.textContent = 'Set radius';
+      if (document.getElementById('dash-zone-details')) {
+        document.getElementById('dash-zone-details').textContent = 'Set the attendance area before opening a session.';
+      }
     }
   } catch (e) { /* ignore */ }
 
@@ -653,7 +669,7 @@ function updateDashboardZoneInputs(lat, lng) {
   if (dashboardZoneMap) dashboardZoneMap.panTo([lat, lng]);
 }
 
-function initDashboardZoneMap(lat = 6.6731, lng = -1.5670, radius = 100) {
+function initDashboardZoneMap(lat, lng, radius) {
   const container = document.getElementById('dashboard-zone-map');
   if (!container) return;
 
@@ -796,16 +812,12 @@ function setupManagerControls() {
     });
 
     setupDashboardLocationSearch();
-    const defaultLat = 6.6731;
-    const defaultLng = -1.5670;
-    const defaultRadius = 100;
-    if (!document.getElementById('zone-lat').value) {
-      document.getElementById('zone-lat').value = defaultLat;
-      document.getElementById('zone-lng').value = defaultLng;
-      document.getElementById('zone-radius').value = defaultRadius;
-      document.getElementById('radius-val-disp').textContent = `${defaultRadius} meters`;
+    const latitude = parseFloat(document.getElementById('zone-lat').value);
+    const longitude = parseFloat(document.getElementById('zone-lng').value);
+    const radius = parseFloat(document.getElementById('zone-radius').value);
+    if (Number.isFinite(latitude) && Number.isFinite(longitude) && Number.isFinite(radius)) {
+      initDashboardZoneMap(latitude, longitude, radius);
     }
-    initDashboardZoneMap(parseFloat(document.getElementById('zone-lat').value || defaultLat), parseFloat(document.getElementById('zone-lng').value || defaultLng), parseFloat(document.getElementById('zone-radius').value || defaultRadius));
   }
 
   const gpsBtn = document.getElementById('get-manager-location-btn');

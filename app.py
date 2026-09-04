@@ -508,6 +508,10 @@ def api_zone():
         return jsonify({"ok": True, "zone": zone})
     
     zone = db.get_active_zone()
+    if session.get("role") == "student" and not db.get_active_session(
+        course=session.get("course")
+    ):
+        zone = None
     return jsonify({"ok": True, "zone": zone})
 
 
@@ -542,7 +546,7 @@ def api_active_session():
         student = db.get_student(session.get("student_id"))
         course = student.get("course") if student else session.get("course")
     session_data = db.get_active_session(course)
-    zone_data = db.get_active_zone()
+    zone_data = db.get_active_zone() if session_data else None
     return jsonify({"ok": True, "session": session_data, "zone": zone_data})
 
 
