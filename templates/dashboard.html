@@ -263,11 +263,11 @@
         <div class="grid grid-2 gap-12">
           <div class="field">
             <label for="zone-lat" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Center Latitude</label>
-            <input id="zone-lat" type="number" min="-90" max="90" step="0.000001" placeholder="6.6731" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
+            <input id="zone-lat" type="number" min="-90" max="90" step="0.000001" placeholder="Enter latitude" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
           </div>
           <div class="field">
             <label for="zone-lng" style="display:block; margin-bottom:4px; font-size:0.85rem; font-weight:600;">Center Longitude</label>
-            <input id="zone-lng" type="number" min="-180" max="180" step="0.000001" placeholder="-1.5670" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
+            <input id="zone-lng" type="number" min="-180" max="180" step="0.000001" placeholder="Enter longitude" required style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text);">
           </div>
         </div>
 
@@ -579,6 +579,7 @@ async function loadManagerDashboard() {
       if (document.getElementById('dash-zone-details')) {
         document.getElementById('dash-zone-details').textContent = 'Set the attendance area before opening a session.';
       }
+        initDashboardZoneMap();
     }
   } catch (e) { /* ignore */ }
 
@@ -674,8 +675,11 @@ function initDashboardZoneMap(lat, lng, radius) {
   if (!container) return;
 
   if (typeof L !== 'undefined') {
+    const hasZone = Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
+    const mapLat = hasZone ? Number(lat) : 0;
+    const mapLng = hasZone ? Number(lng) : 0;
     if (!dashboardZoneMap) {
-      dashboardZoneMap = L.map('dashboard-zone-map').setView([lat, lng], 15);
+      dashboardZoneMap = L.map('dashboard-zone-map').setView([mapLat, mapLng], hasZone ? 15 : 2);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap'
@@ -684,9 +688,11 @@ function initDashboardZoneMap(lat, lng, radius) {
       dashboardZoneMap.on('click', (e) => {
         updateDashboardZoneInputs(e.latlng.lat, e.latlng.lng);
       });
-    } else {
-      dashboardZoneMap.setView([lat, lng], 15);
+    } else if (hasZone) {
+      dashboardZoneMap.setView([mapLat, mapLng], 15);
     }
+
+    if (!hasZone) return;
 
     if (dashboardZoneMarker) dashboardZoneMap.removeLayer(dashboardZoneMarker);
     if (dashboardZoneCircle) dashboardZoneMap.removeLayer(dashboardZoneCircle);

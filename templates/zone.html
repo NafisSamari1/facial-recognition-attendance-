@@ -106,6 +106,7 @@ let sessionInterval = null;
 async function initZonePage() {
   setupRadiusSlider();
   setupLocationSearch();
+  await loadCurrentZone();
   await loadActiveSession();
   setupFormHandlers();
 }
