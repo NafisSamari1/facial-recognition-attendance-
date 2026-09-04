@@ -90,7 +90,7 @@ def login_page():
         return redirect(url_for("dashboard"))
 
     if request.method == "POST":
-        student_id = (request.form.get("student_id") or "").strip()
+        student_id = "".join((request.form.get("student_id") or "").split())
         device_id = (request.form.get("device_id") or "").strip()
         device_name = (request.form.get("device_name") or "").strip()
 
@@ -328,7 +328,7 @@ def api_delete_course(course_name):
 @app.route("/api/students", methods=["POST"])
 def api_create_student():
     payload = request.get_json(force=True)
-    student_id = (payload.get("student_id") or "").strip()
+    student_id = "".join((payload.get("student_id") or "").split())
     full_name = (payload.get("full_name") or "").strip()
     course = (payload.get("course") or "").strip()
     email = (payload.get("email") or "").strip()

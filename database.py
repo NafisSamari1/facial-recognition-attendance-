@@ -22,6 +22,12 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 USE_POSTGRES = bool(DATABASE_URL)
 
 
+def normalize_student_id(student_id):
+    if student_id is None:
+        return ""
+    return "".join(str(student_id).split()).casefold()
+
+
 def _prepare_query(query):
     if USE_POSTGRES:
         return query.replace("?", "%s")
@@ -290,10 +296,16 @@ def add_student(student_id, full_name, course, email, device_id=None, device_nam
 
 
 def get_student(student_id):
+    normalized_id = normalize_student_id(student_id)
+    if not normalized_id:
+        return None
     conn = get_connection()
-    row = _execute(conn, "SELECT * FROM students WHERE student_id = ?", (student_id,)).fetchone()
+    rows = _execute(conn, "SELECT * FROM students").fetchall()
     conn.close()
-    return _as_dict(row)
+    for row in rows:
+        if normalize_student_id(row["student_id"]) == normalized_id:
+            return _as_dict(row)
+    return None
 
 
 def get_student_by_device(device_id):
