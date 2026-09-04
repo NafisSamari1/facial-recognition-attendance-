@@ -1,0 +1,26 @@
+{
+  "name": "Verascan Manager Portal",
+  "short_name": "Verascan Manager",
+  "id": "/manager-app",
+  "description": "Manager attendance control and student management portal.",
+  "start_url": "/login/manager",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#101815",
+  "theme_color": "#2f8c5e",
+  "icons": [
+    {
+      "src": "/static/images/verscan%20knust%20logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/verscan%20knust%20logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

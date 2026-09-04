@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Student Login - Verascan</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='student-manifest.json') }}">
+    <meta name="theme-color" content="#2f8c5e">
   </head>
   <body>
     <div class="login-shell">
@@ -52,6 +54,9 @@
     </div>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('{{ url_for('static', filename='service-worker.js') }}');
+      }
       document.addEventListener('DOMContentLoaded', () => {
         if (typeof getDeviceId === 'function') {
           document.getElementById('login_device_id').value = getDeviceId();

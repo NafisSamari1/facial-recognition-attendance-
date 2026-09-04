@@ -2,7 +2,9 @@ const CACHE_NAME = 'verascan-shell-v1';
 const APP_SHELL = [
   '/static/css/style.css',
   '/static/js/main.js',
-  '/static/manifest.json'
+  '/static/manifest.json',
+  '/static/student-manifest.json',
+  '/static/manager-manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
